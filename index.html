@@ -4,16 +4,16 @@
     <meta charset="UTF-8" />
     <title>Trello Clone</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="styles.css?v=4" />
+    <link rel="stylesheet" href="styles.css?v=5" />
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <script src="firebase-config.js?v=4"></script>
+    <script src="firebase-config.js?v=5"></script>
   </head>
   <body>
-    <!-- Single auth screen: Sign in (default) and Sign up tabs; visible until auth listener or sign-in shows app -->
-    <div id="auth-screen" class="auth-screen">
+    <!-- Auth screen: hidden by default when skip-login is on; JS shows it when auth is required -->
+    <div id="auth-screen" class="auth-screen hidden">
       <div class="auth-container">
         <div class="auth-tabs">
           <button type="button" id="auth-tab-signin" class="auth-tab active">Sign in</button>
@@ -67,8 +67,8 @@
       </div>
     </div>
 
-    <!-- App content (Kanban board) - hidden until logged in or demo -->
-    <div class="app hidden" id="app-content">
+    <!-- App content (Kanban board) - visible by default; JS hides and shows auth when login is required -->
+    <div class="app" id="app-content">
       <div class="world-clock-container" id="world-clock-container">
         <div class="world-clock-header">
           <span class="world-clock-title">🌍 World Clock</span>
@@ -313,7 +313,7 @@
 
     <footer class="app-version" id="app-version" aria-hidden="true">v0.2</footer>
 
-    <script src="main.js?v=4"></script>
+    <script src="main.js?v=5"></script>
   </body>
 </html>
 

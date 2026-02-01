@@ -2647,8 +2647,8 @@ async function init() {
     }
     if (window.firebaseAuth) {
       setupAuthListener();
-      // Don't call showAuthScreen() here — auth-screen is visible by default in HTML.
-      // onAuthStateChanged will call showAppContent() if user is logged in, or showAuthScreen() if null.
+      // HTML defaults to kanban; show login until auth state is known.
+      showAuthScreen();
     } else {
       enterDemoMode();
     }
