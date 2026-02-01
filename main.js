@@ -2,6 +2,7 @@ const STORAGE_KEY = "trelloCloneState.v1";
 const EMAIL_SETTINGS_KEY = "trelloCloneEmailSettings.v1";
 const GEMINI_SETTINGS_KEY = "trelloCloneGeminiSettings.v1";
 const POMODORO_SETTINGS_KEY = "trelloClonePomodoroSettings.v1";
+const WORLD_CLOCK_VISIBLE_KEY = "trelloCloneWorldClockVisible.v1";
 const USERS_STORAGE_KEY = "trelloCloneUsers.v1";
 const CURRENT_USER_KEY = "trelloCloneCurrentUser.v1";
 const DEMO_STORAGE_KEY = "trelloCloneDemoState.v1";
@@ -2039,9 +2040,64 @@ function updateWorldClock() {
   });
 }
 
+function getWorldClockVisible() {
+  try {
+    const stored = localStorage.getItem(WORLD_CLOCK_VISIBLE_KEY);
+    if (stored === null) return true;
+    return stored === "true";
+  } catch (e) {
+    return true;
+  }
+}
+
+function setWorldClockVisible(visible) {
+  try {
+    localStorage.setItem(WORLD_CLOCK_VISIBLE_KEY, visible ? "true" : "false");
+  } catch (e) {
+    // ignore
+  }
+}
+
+function applyWorldClockVisibility() {
+  const container = document.getElementById("world-clock-container");
+  const showBar = document.getElementById("world-clock-show-bar");
+  const visible = getWorldClockVisible();
+  if (container) {
+    if (visible) {
+      container.classList.remove("hidden");
+    } else {
+      container.classList.add("hidden");
+    }
+  }
+  if (showBar) {
+    if (visible) {
+      showBar.classList.add("hidden");
+    } else {
+      showBar.classList.remove("hidden");
+    }
+  }
+}
+
 function initWorldClock() {
-  const container = document.getElementById('world-clock-container');
+  const container = document.getElementById("world-clock-container");
   if (!container) return;
+
+  applyWorldClockVisibility();
+
+  const hideBtn = document.getElementById("world-clock-hide-btn");
+  const showBtn = document.getElementById("world-clock-show-btn");
+  if (hideBtn) {
+    hideBtn.addEventListener("click", () => {
+      setWorldClockVisible(false);
+      applyWorldClockVisibility();
+    });
+  }
+  if (showBtn) {
+    showBtn.addEventListener("click", () => {
+      setWorldClockVisible(true);
+      applyWorldClockVisibility();
+    });
+  }
 
   // Update immediately
   updateWorldClock();

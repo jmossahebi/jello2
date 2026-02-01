@@ -15,10 +15,16 @@
     <!-- Login/registration disabled – app opens directly on Kanban board -->
     <div class="app" id="app-content">
       <div class="world-clock-container" id="world-clock-container">
-        <div class="world-clock-title">🌍 World Clock</div>
+        <div class="world-clock-header">
+          <span class="world-clock-title">🌍 World Clock</span>
+          <button type="button" class="btn btn-ghost world-clock-toggle-btn" id="world-clock-hide-btn" title="Hide world clock">− Hide</button>
+        </div>
         <div class="world-clock-clocks" id="world-clock-clocks">
           <!-- Clocks will be injected by JavaScript -->
         </div>
+      </div>
+      <div class="world-clock-show-bar hidden" id="world-clock-show-bar">
+        <button type="button" class="btn btn-ghost world-clock-show-btn" id="world-clock-show-btn" title="Show world clock">🌍 Show World Clock</button>
       </div>
       <header class="app-header">
         <div class="app-header-left">

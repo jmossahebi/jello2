@@ -51,13 +51,39 @@ body {
   z-index: 25;
 }
 
+.world-clock-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
 .world-clock-title {
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--text-muted);
-  margin-bottom: 0.5rem;
+  margin: 0;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+}
+
+.world-clock-toggle-btn {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.world-clock-show-bar {
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  padding: 0.35rem 1.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 25;
+}
+
+.world-clock-show-btn {
+  font-size: 0.8rem;
 }
 
 .world-clock-clocks {
