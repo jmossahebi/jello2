@@ -2,6 +2,29 @@
 
 This app now uses Firebase for authentication and data storage, enabling multi-device sync.
 
+---
+
+## Fix: "Firestore permission denied"
+
+If you see **"Firestore permission denied"** in the app:
+
+1. Open [Firebase Console](https://console.firebase.google.com/) and select your project (e.g. **jello-3b04a**).
+2. Go to **Firestore Database** → **Rules**.
+3. Replace the rules with the contents of **`firestore.rules`** in this project (or paste the rules from **Step 6** below).
+4. Click **Publish** (not just Save). Wait for "Rules published" to confirm.
+
+After publishing, reload the app. Only authenticated users can read/write their own data; the rules must be published for the app to work.
+
+### Still not working?
+
+- **Check the Rules tab**: Make sure you're editing rules for the **(default)** database, not a named database.
+- **Confirm Publish**: After editing, you must click **Publish**. The rules editor shows a "Publish" button at the top.
+- **App Check**: If you enabled App Check for Firestore, either register this app in App Check (Debug/Release tokens) or temporarily disable App Check for Firestore so the app can connect.
+- **Browser console**: Open DevTools → Console. Look for `Firestore loadState error:` to see the exact path and error; the path should be `users/<your-uid>/data/state`.
+- **Same project**: Your `firebase-config.js` projectId (e.g. `jello-3b04a`) must match the Firebase project where you published the rules.
+
+---
+
 ## Step 1: Create a Firebase Project
 
 1. Go to [Firebase Console](https://console.firebase.google.com/)
