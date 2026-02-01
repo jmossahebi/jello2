@@ -765,6 +765,12 @@ body {
   font-weight: 600;
 }
 
+.auth-build-id {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
 .auth-form {
   display: flex;
   flex-direction: column;
