@@ -14,6 +14,20 @@ This app now uses Firebase for authentication and data storage, enabling multi-d
 2. Enable **Email/Password** authentication
 3. Click "Save"
 
+### Password reset emails
+
+For "Forgot password?" to deliver emails:
+
+1. **Authorized domains**  
+   Go to **Authentication** → **Settings** → **Authorized domains**.  
+   Add every domain where the app runs (e.g. `localhost` for local dev, and your production domain like `yourapp.vercel.app`). If the domain is missing, Firebase may not send the email or will return an error.
+
+2. **Check spam**  
+   Reset emails often land in spam, especially with the default Firebase sender. Ask users to check spam and wait a few minutes.
+
+3. **Optional: custom sender**  
+   In **Authentication** → **Templates**, edit the "Password reset" template and use "Customize domain" to send from your own domain once verified. This can improve deliverability.
+
 ## Step 3: Create Firestore Database
 
 1. In Firebase Console, go to **Firestore Database**

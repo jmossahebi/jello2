@@ -104,7 +104,14 @@ async function sendPasswordResetEmail(email) {
     return { success: false, error: "Password reset is not available" };
   }
   try {
-    await window.firebaseAuth.sendPasswordResetEmail(email.trim().toLowerCase());
+    const normalizedEmail = email.trim().toLowerCase();
+    const continueUrl = typeof window !== "undefined" && window.location.origin
+      ? window.location.origin + "/"
+      : undefined;
+    const actionCodeSettings = continueUrl
+      ? { url: continueUrl, handleCodeInApp: false }
+      : undefined;
+    await window.firebaseAuth.sendPasswordResetEmail(normalizedEmail, actionCodeSettings);
     return { success: true };
   } catch (error) {
     let errorMessage = "Could not send reset email. Please try again.";
@@ -112,6 +119,8 @@ async function sendPasswordResetEmail(email) {
       errorMessage = "No account found with this email address.";
     } else if (error.code === "auth/invalid-email") {
       errorMessage = "Invalid email address.";
+    } else if (error.code === "auth/unauthorized-domain") {
+      errorMessage = "This app domain is not authorized for password reset. Ask the app owner to add it in Firebase Console → Authentication → Authorized domains.";
     } else if (error.message) {
       errorMessage = error.message;
     }
@@ -1810,7 +1819,7 @@ if (resetPasswordSendBtn) {
     resetPasswordSendBtn.textContent = "Send reset link";
 
     if (result.success) {
-      resetPasswordMessage.textContent = "Check your email for a link to reset your password.";
+      resetPasswordMessage.textContent = "If an account exists, we sent a reset link to that email. Check your inbox and spam, and allow a few minutes for delivery.";
       resetPasswordMessage.classList.remove("hidden", "auth-error");
     } else {
       resetPasswordMessage.textContent = result.error;
