@@ -313,6 +313,7 @@ function showRegisterScreen() {
 
 // Show auth screen (default: Sign in tab)
 function showAuthScreen() {
+  if (SKIP_LOGIN_OPEN_KANBAN || window.SKIP_LOGIN_OPEN_KANBAN) return;
   showLoginScreen();
 }
 
@@ -2640,7 +2641,7 @@ async function init() {
   if (regErrEl) regErrEl.textContent = "";
 
   try {
-    if (SKIP_LOGIN_OPEN_KANBAN) {
+    if (SKIP_LOGIN_OPEN_KANBAN || window.SKIP_LOGIN_OPEN_KANBAN) {
       // Bypass auth: open directly on kanban (demo mode, localStorage).
       await enterDemoMode();
       return;
