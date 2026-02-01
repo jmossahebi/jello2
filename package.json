@@ -11,7 +11,8 @@
     "board"
   ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "firebase-tools": "^15.5.1"
+  }
 }
-
-
