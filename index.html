@@ -4,71 +4,66 @@
     <meta charset="UTF-8" />
     <title>Trello Clone</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="styles.css?v=3" />
+    <link rel="stylesheet" href="styles.css?v=4" />
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <script src="firebase-config.js?v=3"></script>
+    <script src="firebase-config.js?v=4"></script>
   </head>
   <body>
-    <!-- Login screen (shown when Firebase configured and no user) -->
-    <div id="login-screen" class="auth-screen hidden">
+    <!-- Single auth screen: Sign in (default) and Sign up tabs -->
+    <div id="auth-screen" class="auth-screen hidden">
       <div class="auth-container">
-        <div class="auth-header">
-          <h1>Sign in</h1>
-          <p class="auth-build-id">Build v2 — if you see this, the new deploy is live.</p>
+        <div class="auth-tabs">
+          <button type="button" id="auth-tab-signin" class="auth-tab active">Sign in</button>
+          <button type="button" id="auth-tab-signup" class="auth-tab">Sign up</button>
         </div>
-        <form class="auth-form" id="login-form" onsubmit="return false;">
-          <label class="field">
-            <span class="field-label">Email</span>
-            <input id="login-email-input" class="field-input" type="email" placeholder="you@example.com" autocomplete="email" />
-          </label>
-          <label class="field">
-            <span class="field-label">Password</span>
-            <input id="login-password-input" class="field-input" type="password" placeholder="••••••••" autocomplete="current-password" />
-          </label>
-          <div id="login-error" class="auth-error hidden"></div>
-          <button type="button" id="login-btn" class="btn btn-primary">Sign in</button>
-          <p class="auth-forgot-row">
-            <button type="button" id="forgot-password-btn" class="btn btn-ghost auth-forgot-btn">Forgot password?</button>
-          </p>
-          <div class="auth-switch">
-            <span>Don't have an account?</span>
-            <button type="button" id="go-to-register-btn" class="btn-link">Sign up</button>
-          </div>
-          <button type="button" id="demo-btn" class="btn btn-secondary">Try demo</button>
-        </form>
-      </div>
-    </div>
 
-    <!-- Register screen -->
-    <div id="register-screen" class="auth-screen hidden">
-      <div class="auth-container">
-        <div class="auth-header">
-          <h1>Create account</h1>
-        </div>
-        <form class="auth-form" id="register-form" onsubmit="return false;">
-          <label class="field">
-            <span class="field-label">Email</span>
-            <input id="register-email-input" class="field-input" type="email" placeholder="you@example.com" autocomplete="email" />
-          </label>
-          <label class="field">
-            <span class="field-label">Password</span>
-            <input id="register-password-input" class="field-input" type="password" placeholder="••••••••" autocomplete="new-password" />
-          </label>
-          <label class="field">
-            <span class="field-label">Confirm password</span>
-            <input id="register-confirm-password-input" class="field-input" type="password" placeholder="••••••••" autocomplete="new-password" />
-          </label>
-          <div id="register-error" class="auth-error hidden"></div>
-          <button type="button" id="register-btn" class="btn btn-primary">Sign up</button>
-          <div class="auth-switch">
-            <span>Already have an account?</span>
-            <button type="button" id="go-to-login-btn" class="btn-link">Sign in</button>
+        <div id="login-screen" class="auth-panel">
+          <div class="auth-header">
+            <h1>Sign in</h1>
           </div>
-          <button type="button" id="demo-btn-register" class="btn btn-secondary">Try demo</button>
-        </form>
+          <form class="auth-form" id="login-form" onsubmit="return false;">
+            <label class="field">
+              <span class="field-label">Email</span>
+              <input id="login-email-input" class="field-input" type="email" placeholder="you@example.com" autocomplete="email" />
+            </label>
+            <label class="field">
+              <span class="field-label">Password</span>
+              <input id="login-password-input" class="field-input" type="password" placeholder="••••••••" autocomplete="current-password" />
+            </label>
+            <p class="auth-forgot-row">
+              <button type="button" id="forgot-password-btn" class="btn-link auth-forgot-btn">Forgot password?</button>
+            </p>
+            <div id="login-error" class="auth-error hidden"></div>
+            <button type="button" id="login-btn" class="btn btn-primary">Sign in</button>
+            <button type="button" id="demo-btn" class="btn btn-secondary">Try demo</button>
+          </form>
+        </div>
+
+        <div id="register-screen" class="auth-panel hidden">
+          <div class="auth-header">
+            <h1>Create account</h1>
+          </div>
+          <form class="auth-form" id="register-form" onsubmit="return false;">
+            <label class="field">
+              <span class="field-label">Email</span>
+              <input id="register-email-input" class="field-input" type="email" placeholder="you@example.com" autocomplete="email" />
+            </label>
+            <label class="field">
+              <span class="field-label">Password</span>
+              <input id="register-password-input" class="field-input" type="password" placeholder="••••••••" autocomplete="new-password" />
+            </label>
+            <label class="field">
+              <span class="field-label">Confirm password</span>
+              <input id="register-confirm-password-input" class="field-input" type="password" placeholder="••••••••" autocomplete="new-password" />
+            </label>
+            <div id="register-error" class="auth-error hidden"></div>
+            <button type="button" id="register-btn" class="btn btn-primary">Sign up</button>
+            <button type="button" id="demo-btn-register" class="btn btn-secondary">Try demo</button>
+          </form>
+        </div>
       </div>
     </div>
 
@@ -318,7 +313,7 @@
 
     <footer class="app-version" id="app-version" aria-hidden="true">v0.2</footer>
 
-    <script src="main.js?v=3"></script>
+    <script src="main.js?v=4"></script>
   </body>
 </html>
 

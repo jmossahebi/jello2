@@ -189,9 +189,6 @@ function getCurrentUser() {
 // Listen for auth state changes
 function setupAuthListener() {
   window.firebaseAuth.onAuthStateChanged((user) => {
-    // #region agent log
-    _dbg({location:'main.js:onAuthStateChanged',message:'auth state',data:{hasUser:!!user,isDemoMode},hypothesisId:'H6-auth-state'});
-    // #endregion
     // Don't interfere if in demo mode
     if (isDemoMode) {
       return;
@@ -221,46 +218,48 @@ function setupAuthListener() {
   });
 }
 
-// Show login screen (hide register and app)
+// Show login panel (auth screen visible, Sign in tab active)
 function showLoginScreen() {
-  // #region agent log
-  const _ls = document.getElementById("login-screen"); const _rs = document.getElementById("register-screen");
-  _dbg({location:'main.js:showLoginScreen',message:'showing login',data:{hasLoginEl:!!_ls,hasRegisterEl:!!_rs,loginHiddenBefore:_ls?_ls.classList.contains('hidden'):null},hypothesisId:'H4-show-login'});
-  // #endregion
-  const loginScreen = document.getElementById("login-screen");
-  const registerScreen = document.getElementById("register-screen");
+  const authScreen = document.getElementById("auth-screen");
+  const loginPanel = document.getElementById("login-screen");
+  const registerPanel = document.getElementById("register-screen");
   const appContent = document.getElementById("app-content");
-  if (loginScreen) loginScreen.classList.remove("hidden");
-  if (registerScreen) registerScreen.classList.add("hidden");
+  const tabSignin = document.getElementById("auth-tab-signin");
+  const tabSignup = document.getElementById("auth-tab-signup");
+  if (authScreen) authScreen.classList.remove("hidden");
+  if (loginPanel) loginPanel.classList.remove("hidden");
+  if (registerPanel) registerPanel.classList.add("hidden");
   if (appContent) appContent.classList.add("hidden");
+  if (tabSignin) tabSignin.classList.add("active");
+  if (tabSignup) tabSignup.classList.remove("active");
 }
 
-// Show register screen (hide login and app)
+// Show register panel (auth screen visible, Sign up tab active)
 function showRegisterScreen() {
-  // #region agent log
-  _dbg({location:'main.js:showRegisterScreen',message:'showing register',data:{caller:new Error().stack?.split('\n')[2]?.trim()},hypothesisId:'H5-show-register'});
-  // #endregion
-  const loginScreen = document.getElementById("login-screen");
-  const registerScreen = document.getElementById("register-screen");
+  const authScreen = document.getElementById("auth-screen");
+  const loginPanel = document.getElementById("login-screen");
+  const registerPanel = document.getElementById("register-screen");
   const appContent = document.getElementById("app-content");
-  if (loginScreen) loginScreen.classList.add("hidden");
-  if (registerScreen) registerScreen.classList.remove("hidden");
+  const tabSignin = document.getElementById("auth-tab-signin");
+  const tabSignup = document.getElementById("auth-tab-signup");
+  if (authScreen) authScreen.classList.remove("hidden");
+  if (loginPanel) loginPanel.classList.add("hidden");
+  if (registerPanel) registerPanel.classList.remove("hidden");
   if (appContent) appContent.classList.add("hidden");
+  if (tabSignin) tabSignin.classList.remove("active");
+  if (tabSignup) tabSignup.classList.add("active");
 }
 
-// Show auth screen (default: login)
+// Show auth screen (default: Sign in tab)
 function showAuthScreen() {
   showLoginScreen();
 }
 
-// Show app content
+// Show app content (board), hide auth
 function showAppContent() {
-  const loginScreen = document.getElementById("login-screen");
-  const registerScreen = document.getElementById("register-screen");
+  const authScreen = document.getElementById("auth-screen");
   const appContent = document.getElementById("app-content");
-  
-  if (loginScreen) loginScreen.classList.add("hidden");
-  if (registerScreen) registerScreen.classList.add("hidden");
+  if (authScreen) authScreen.classList.add("hidden");
   if (appContent) appContent.classList.remove("hidden");
 }
 
@@ -1675,17 +1674,22 @@ function getDragAfterElement(container, y) {
 
 // ---------- Auth Events ----------
 
-// Use event delegation so auth screen buttons always work (no dependency on refs)
+// Resolve id from clicked element (clicking button text can make e.target a child without id)
+function getClickedId(e) {
+  const el = e.target && e.target.closest ? e.target.closest("[id]") : e.target;
+  return el ? el.id : null;
+}
+
 document.addEventListener("click", async (e) => {
-  const id = e.target.id;
+  const id = getClickedId(e);
   if (!id) return;
 
-  if (id === "go-to-register-btn") {
+  if (id === "go-to-register-btn" || id === "auth-tab-signup") {
     e.preventDefault();
     showRegisterScreen();
     return;
   }
-  if (id === "go-to-login-btn") {
+  if (id === "go-to-login-btn" || id === "auth-tab-signin") {
     e.preventDefault();
     showLoginScreen();
     return;
@@ -2417,18 +2421,7 @@ async function initApp() {
   }, 60 * 60 * 1000); // Check every hour
 }
 
-// #region agent log
-function _dbg(payload) {
-  var line = '[DBG] ' + payload.location + ' | ' + payload.message + ' | ' + JSON.stringify(payload.data || {});
-  console.log(line);
-  fetch('http://127.0.0.1:7242/ingest/854066e4-ab40-45ec-ac60-bd719651784c',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...payload,timestamp:Date.now(),sessionId:'debug-session'})}).catch(function(){});
-}
-// #endregion
-
 async function init() {
-  // #region agent log
-  _dbg({location:'main.js:init',message:'init entry',data:{firebaseAuth:!!window.firebaseAuth},hypothesisId:'H1-init-branch'});
-  // #endregion
   var versionEl = document.getElementById("app-version");
   if (versionEl) versionEl.textContent = "v" + APP_VERSION;
 
@@ -2439,15 +2432,9 @@ async function init() {
 
   try {
     if (window.firebaseAuth) {
-      // #region agent log
-      _dbg({location:'main.js:init',message:'calling setupAuthListener + showAuthScreen',data:{},hypothesisId:'H2-firebase-path'});
-      // #endregion
       setupAuthListener();
       showAuthScreen();
     } else {
-      // #region agent log
-      _dbg({location:'main.js:init',message:'calling enterDemoMode',data:{},hypothesisId:'H3-demo-path'});
-      // #endregion
       enterDemoMode();
     }
   } catch (err) {
