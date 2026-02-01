@@ -106,8 +106,14 @@ async function registerUser(email, password, confirmPassword) {
       errorMessage = "Password is too weak";
     } else if (error.code === 'auth/invalid-email') {
       errorMessage = "Invalid email address";
+    } else if (error.code === 'auth/too-many-requests') {
+      errorMessage = "Too many attempts. Please try again later.";
+    } else if (error.code === 'auth/network-request-failed') {
+      errorMessage = "Network error. Check your internet connection and try again.";
     } else if (error.code === 'permission-denied') {
-      errorMessage = "Database permission denied. Check Firestore rules are published.";
+      errorMessage = "We couldn't set up your account: database permission denied. The app owner needs to publish Firestore rules (see FIREBASE_SETUP.md).";
+    } else if (error.code === 'unavailable' || (error.message && error.message.toLowerCase().includes("unavailable"))) {
+      errorMessage = "We couldn't reach the server. Check your internet connection and try again.";
     } else if (error.message) {
       errorMessage = error.message;
     }
@@ -187,6 +193,12 @@ async function loginUser(email, password) {
       errorMessage = "Invalid email address";
     } else if (error.code === 'auth/user-disabled') {
       errorMessage = "This account has been disabled";
+    } else if (error.code === 'auth/too-many-requests') {
+      errorMessage = "Too many attempts. Please try again later.";
+    } else if (error.code === 'auth/network-request-failed') {
+      errorMessage = "Network error. Check your internet connection and try again.";
+    } else if (error.message) {
+      errorMessage = error.message;
     }
     return { success: false, error: errorMessage };
   }
@@ -220,7 +232,7 @@ function getCurrentUser() {
 
 // Listen for auth state changes
 function setupAuthListener() {
-  window.firebaseAuth.onAuthStateChanged((user) => {
+  window.firebaseAuth.onAuthStateChanged(async (user) => {
     // Don't interfere if in demo mode
     if (isDemoMode) {
       return;
@@ -246,7 +258,11 @@ function setupAuthListener() {
         return;
       }
       showAppContent();
-      initApp();
+      try {
+        await initApp();
+      } catch (err) {
+        showAppLoadError(getFriendlyLoadError(err));
+      }
     } else {
       // Don't show auth screen if we're in the middle of signing in (avoids race where listener fires with null)
       if (isSigningIn) {
@@ -467,12 +483,57 @@ async function loadState() {
   }
 }
 
+/** Return a user-friendly message when sign-in succeeded but loading the board failed */
+function getFriendlyLoadError(error) {
+  if (!error) return "We couldn't load your board. Please refresh the page or try again.";
+  const code = error.code || "";
+  const msg = (error.message || "").toLowerCase();
+  if (code === "permission-denied" || msg.includes("permission")) {
+    return "You're signed in but we don't have permission to load your board. The app owner may need to update the database rules (see FIREBASE_SETUP.md).";
+  }
+  if (code === "unavailable" || msg.includes("unavailable") || msg.includes("network")) {
+    return "We couldn't reach the server. Check your internet connection and try again.";
+  }
+  if (msg.includes("failed to fetch") || msg.includes("network error")) {
+    return "Network error. Check your connection and try again.";
+  }
+  return "We couldn't load your board. Please refresh the page or try again. If it keeps happening, check your connection.";
+}
+
+/** Show a dismissible banner at the top of the app when the board failed to load after sign-in */
+function showAppLoadError(message) {
+  var existing = document.getElementById("app-load-error-banner");
+  if (existing) {
+    existing.querySelector(".app-load-error-text").textContent = message;
+    existing.classList.remove("hidden");
+    return;
+  }
+  const banner = document.createElement("div");
+  banner.id = "app-load-error-banner";
+  banner.className = "app-load-error-banner";
+  banner.style.cssText = "position:fixed;top:0;left:0;right:0;background:#b91c1c;color:#fff;padding:10px 16px;text-align:center;font-size:13px;z-index:1000;line-height:1.4;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;";
+  const text = document.createElement("span");
+  text.className = "app-load-error-text";
+  text.textContent = message || "We couldn't load your board. Please refresh the page or try again.";
+  const dismiss = document.createElement("button");
+  dismiss.type = "button";
+  dismiss.className = "btn btn-ghost";
+  dismiss.style.cssText = "color:#fff;border:1px solid rgba(255,255,255,0.6);padding:4px 10px;";
+  dismiss.textContent = "Dismiss";
+  dismiss.addEventListener("click", function () {
+    banner.classList.add("hidden");
+  });
+  banner.appendChild(text);
+  banner.appendChild(dismiss);
+  document.body.appendChild(banner);
+}
+
 function showFirestorePermissionBanner() {
   if (document.getElementById("firestore-permission-banner")) return;
   const banner = document.createElement("div");
   banner.id = "firestore-permission-banner";
   banner.style.cssText = "position:fixed;top:0;left:0;right:0;background:#b91c1c;color:#fff;padding:10px 16px;text-align:center;font-size:13px;z-index:1000;line-height:1.4;";
-  banner.innerHTML = "Firestore permission denied. In Firebase Console go to Firestore Database → Rules, paste the rules from <code>firestore.rules</code>, then click <strong>Publish</strong>. See FIREBASE_SETUP.md for troubleshooting.";
+  banner.innerHTML = "You're signed in but we couldn't load your board. This usually means the app's database rules aren't set up correctly. If you run this app, open Firestore Database → Rules in Firebase Console, paste the rules from <code>firestore.rules</code>, then click <strong>Publish</strong>. See FIREBASE_SETUP.md for details.";
   document.body.appendChild(banner);
 }
 
@@ -1811,8 +1872,19 @@ document.addEventListener("click", async (e) => {
     try {
       const result = await loginUser(email, password);
       if (result.success) {
-        showAppContent();
-        await initApp();
+        try {
+          showAppContent();
+          await initApp();
+        } catch (loadErr) {
+          var loadBanner = document.getElementById("app-load-error-banner");
+          if (loadBanner) loadBanner.classList.add("hidden");
+          showAuthScreen();
+          showLoginScreen();
+          if (errEl) {
+            errEl.textContent = getFriendlyLoadError(loadErr);
+            errEl.classList.remove("hidden");
+          }
+        }
       } else if (errEl) {
         errEl.textContent = result.error;
         errEl.classList.remove("hidden");
@@ -1840,8 +1912,19 @@ document.addEventListener("click", async (e) => {
     if (result.success) {
       const loginResult = await loginUser(email, password);
       if (loginResult.success) {
-        showAppContent();
-        await initApp();
+        try {
+          showAppContent();
+          await initApp();
+        } catch (loadErr) {
+          var loadBanner = document.getElementById("app-load-error-banner");
+          if (loadBanner) loadBanner.classList.add("hidden");
+          showAuthScreen();
+          showRegisterScreen();
+          if (errEl) {
+            errEl.textContent = getFriendlyLoadError(loadErr);
+            errEl.classList.remove("hidden");
+          }
+        }
       } else if (errEl) {
         errEl.textContent = loginResult.error;
         errEl.classList.remove("hidden");
@@ -2500,6 +2583,7 @@ async function initApp() {
 
   await loadState();
 
+  // For new sign-ups the default board is created in registerUser(); existing users may have no state yet
   if (state.boards.length === 0) {
     const defaultBoardId = uid();
     state.boards.push({
