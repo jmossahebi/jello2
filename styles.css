@@ -264,7 +264,12 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0.25rem;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.btn:active {
+  transform: scale(0.97);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .btn-primary {
@@ -278,6 +283,11 @@ body {
   border-color: var(--accent);
 }
 
+.btn-primary:active {
+  background: #2a2a2a;
+  border-color: var(--text-dim);
+}
+
 .btn-secondary {
   background: var(--bg-mid);
   border: 1px solid var(--border);
@@ -289,6 +299,11 @@ body {
   border-color: var(--border-focus);
 }
 
+.btn-secondary:active {
+  background: var(--bg-dark);
+  border-color: var(--text-dim);
+}
+
 .btn-ghost {
   background: transparent;
   color: var(--text-muted);
@@ -296,6 +311,11 @@ body {
 
 .btn-ghost:hover {
   background: var(--bg-mid);
+  color: var(--text);
+}
+
+.btn-ghost:active {
+  background: var(--bg-panel);
   color: var(--text);
 }
 
@@ -344,7 +364,7 @@ body {
   background: var(--bg-panel);
   color: var(--text-muted);
   cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease, transform 0.1s ease, box-shadow 0.1s ease;
 }
 
 .filter-tag:hover {
@@ -353,10 +373,20 @@ body {
   border-color: var(--border-focus);
 }
 
+.filter-tag:active {
+  transform: scale(0.97);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+  background: var(--bg-mid);
+}
+
 .filter-tag.active {
   background: var(--border-focus);
   color: var(--text);
   border-color: var(--accent);
+}
+
+.filter-tag.active:active {
+  background: var(--bg-elevated);
 }
 
 .filter-clear-btn {
@@ -404,11 +434,18 @@ body {
   justify-content: center;
   font-size: 0.85rem;
   cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease;
+  transition: background 0.12s ease, color 0.12s ease, transform 0.1s ease, box-shadow 0.1s ease;
 }
 
 .icon-btn:hover {
   background: var(--bg-mid);
+  color: var(--text);
+}
+
+.icon-btn:active {
+  transform: scale(0.9);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+  background: var(--bg-panel);
   color: var(--text);
 }
 
@@ -544,10 +581,18 @@ body {
   background: transparent;
   border-radius: var(--radius);
   color: var(--text-muted);
+  transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease, box-shadow 0.1s ease;
 }
 
 .add-card-btn:hover {
   background: var(--bg-mid);
+  color: var(--text);
+}
+
+.add-card-btn:active {
+  transform: scale(0.98);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+  background: var(--bg-panel);
   color: var(--text);
 }
 
@@ -568,10 +613,18 @@ body {
   justify-content: center;
   padding: 0.6rem;
   color: var(--text-muted);
+  transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease, box-shadow 0.1s ease;
 }
 
 .add-list-button:hover {
   background: var(--bg-panel);
+  color: var(--text);
+}
+
+.add-list-button:active {
+  transform: scale(0.97);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+  background: var(--bg-elevated);
   color: var(--text);
 }
 
@@ -665,12 +718,18 @@ body {
   border-radius: 0.2rem;
   font-size: 1rem;
   line-height: 1;
-  transition: color 0.12s ease, background 0.12s ease;
+  transition: color 0.12s ease, background 0.12s ease, transform 0.1s ease;
 }
 
 .tag-chip-remove:hover {
   color: var(--text);
   background: var(--border);
+}
+
+.tag-chip-remove:active {
+  transform: scale(0.9);
+  background: var(--bg-panel);
+  color: var(--text);
 }
 
 .field-input {
@@ -777,16 +836,25 @@ body {
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
   cursor: pointer;
-  transition: color 0.15s ease, border-color 0.15s ease;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease, transform 0.1s ease;
 }
 
 .auth-tab:hover {
   color: var(--text);
 }
 
+.auth-tab:active {
+  transform: scale(0.98);
+  background: var(--bg-mid);
+}
+
 .auth-tab.active {
   color: var(--accent);
   border-bottom-color: var(--accent);
+}
+
+.auth-tab.active:active {
+  background: rgba(163, 163, 163, 0.1);
 }
 
 .auth-panel.hidden {
@@ -857,6 +925,10 @@ body {
   color: var(--text);
 }
 
+.auth-forgot-btn:active {
+  opacity: 0.8;
+}
+
 .btn-link {
   background: none;
   border: none;
@@ -865,11 +937,15 @@ body {
   font-size: 0.85rem;
   text-decoration: underline;
   padding: 0;
-  transition: color 0.15s ease;
+  transition: color 0.15s ease, opacity 0.1s ease;
 }
 
 .btn-link:hover {
   color: var(--text);
+}
+
+.btn-link:active {
+  opacity: 0.75;
 }
 
 .user-info {

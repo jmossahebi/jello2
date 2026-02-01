@@ -25,6 +25,8 @@ const state = {
 let currentUser = null;
 // Demo mode flag
 let isDemoMode = false;
+// Registration in progress flag (prevents onAuthStateChanged race condition)
+let isRegistering = false;
 
 // Active tag filter on current board (array of tag strings; empty = show all)
 let activeTagFilter = [];
@@ -61,16 +63,36 @@ async function registerUser(email, password, confirmPassword) {
   }
 
   try {
+    isRegistering = true;
     // Create user with Firebase Auth
     const userCredential = await window.firebaseAuth.createUserWithEmailAndPassword(
       email.toLowerCase(),
       password
     );
-    
+    const userId = userCredential.user.uid;
+
     // Create user document in Firestore
-    await window.firebaseDb.collection('users').doc(userCredential.user.uid).set({
+    await window.firebaseDb.collection('users').doc(userId).set({
       email: email.toLowerCase(),
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    // Create initial state document so initApp() (called by register button handler) finds it and avoids race
+    const defaultBoardId = uid();
+    await window.firebaseDb.collection('users').doc(userId).collection('data').doc('state').set({
+      boards: [
+        {
+          id: defaultBoardId,
+          name: "My first board",
+          lists: [
+            { id: uid(), title: "To do", cards: [] },
+            { id: uid(), title: "In progress", cards: [] },
+            { id: uid(), title: "Done", cards: [] },
+          ],
+        },
+      ],
+      activeBoardId: defaultBoardId,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
     return { success: true };
@@ -88,6 +110,8 @@ async function registerUser(email, password, confirmPassword) {
       errorMessage = error.message;
     }
     return { success: false, error: errorMessage };
+  } finally {
+    isRegistering = false;
   }
 }
 
@@ -213,6 +237,10 @@ function setupAuthListener() {
       const demoBanner = document.getElementById("demo-banner");
       if (demoBanner) {
         demoBanner.classList.add("hidden");
+      }
+      // During registration, defer showAppContent/initApp to the register button handler (avoids race with Firestore setup)
+      if (isRegistering) {
+        return;
       }
       showAppContent();
       initApp();
