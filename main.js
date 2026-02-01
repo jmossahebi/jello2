@@ -2,7 +2,7 @@ const APP_VERSION = "0.2";
 
 // When true: skip login/register flow and open directly on kanban (demo mode / localStorage).
 // Set to false to restore auth flow.
-const SKIP_LOGIN_OPEN_KANBAN = true;
+const SKIP_LOGIN_OPEN_KANBAN = false;
 
 const STORAGE_KEY = "trelloCloneState.v1";
 const EMAIL_SETTINGS_KEY = "trelloCloneEmailSettings.v1";
@@ -1921,26 +1921,21 @@ document.addEventListener("click", async (e) => {
       errEl.textContent = "";
       errEl.classList.add("hidden");
     }
+    // registerUser() already creates the user and signs them in, so we don't need to call loginUser again
     const result = await registerUser(email, password, confirmPassword);
     if (result.success) {
-      const loginResult = await loginUser(email, password);
-      if (loginResult.success) {
-        try {
-          showAppContent();
-          await initApp();
-        } catch (loadErr) {
-          var loadBanner = document.getElementById("app-load-error-banner");
-          if (loadBanner) loadBanner.classList.add("hidden");
-          showAuthScreen();
-          showRegisterScreen();
-          if (errEl) {
-            errEl.textContent = getFriendlyLoadError(loadErr);
-            errEl.classList.remove("hidden");
-          }
+      try {
+        showAppContent();
+        await initApp();
+      } catch (loadErr) {
+        var loadBanner = document.getElementById("app-load-error-banner");
+        if (loadBanner) loadBanner.classList.add("hidden");
+        showAuthScreen();
+        showRegisterScreen();
+        if (errEl) {
+          errEl.textContent = getFriendlyLoadError(loadErr);
+          errEl.classList.remove("hidden");
         }
-      } else if (errEl) {
-        errEl.textContent = loginResult.error;
-        errEl.classList.remove("hidden");
       }
     } else if (errEl) {
       errEl.textContent = result.error;
