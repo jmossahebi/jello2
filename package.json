@@ -1,0 +1,17 @@
+{
+  "name": "trello-clone",
+  "version": "1.0.0",
+  "description": "Lightweight Trello-style kanban board in vanilla HTML/CSS/JS.",
+  "scripts": {
+    "start": "npx serve ."
+  },
+  "keywords": [
+    "trello",
+    "kanban",
+    "board"
+  ],
+  "author": "",
+  "license": "MIT"
+}
+
+

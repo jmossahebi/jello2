@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Trello Clone</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="styles.css" />
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+  </head>
+  <body>
+    <!-- Login/registration disabled – app opens directly on Kanban board -->
+    <div class="app" id="app-content">
+      <div class="world-clock-container" id="world-clock-container">
+        <div class="world-clock-title">🌍 World Clock</div>
+        <div class="world-clock-clocks" id="world-clock-clocks">
+          <!-- Clocks will be injected by JavaScript -->
+        </div>
+      </div>
+      <header class="app-header">
+        <div class="app-header-left">
+          <div class="app-logo">Kanban</div>
+          <div class="app-header-board-name" id="current-board-name"></div>
+          <div class="demo-banner hidden" id="demo-banner">
+            <span>🎮 Demo Mode</span>
+            <span class="demo-note">Temporary workspace - data not saved</span>
+          </div>
+        </div>
+        <div class="app-header-right">
+          <div class="pomodoro-widget" id="pomodoro-widget">
+            <span class="pomodoro-phase" id="pomodoro-phase">Focus</span>
+            <span class="pomodoro-time" id="pomodoro-time">25:00</span>
+            <div class="pomodoro-actions">
+              <button type="button" class="btn btn-secondary pomodoro-btn" id="pomodoro-start-pause" title="Start / Pause">▶</button>
+              <button type="button" class="btn btn-ghost pomodoro-btn" id="pomodoro-reset" title="Reset">↺</button>
+              <button type="button" class="btn btn-ghost pomodoro-btn" id="pomodoro-settings-btn" title="Customise work & rest time">⚙</button>
+            </div>
+          </div>
+          <select id="board-select" class="board-select"></select>
+          <div class="backup-controls">
+            <button id="backup-folder-btn" class="btn btn-secondary" title="Select backup folder">📁 Backup Folder</button>
+            <span id="backup-status" class="backup-status" title="Backup status"></span>
+          </div>
+          <button id="export-btn" class="btn btn-secondary" title="Export all boards">Export</button>
+          <button id="import-btn" class="btn btn-secondary" title="Import boards from file">Import</button>
+          <input type="file" id="import-file-input" accept=".json" style="display: none;" />
+          <button id="email-settings-btn" class="btn btn-secondary" title="Configure email settings">✉️ Email Settings</button>
+          <button id="transcript-btn" class="btn btn-secondary" title="Import transcript and create cards">🎤 Transcript</button>
+          <button id="settings-btn" class="btn btn-secondary" title="Settings">⚙️ Settings</button>
+          <button id="add-board-btn" class="btn btn-secondary">+ New board</button>
+          <div class="user-info">
+            <span id="user-email-display" class="user-email"></span>
+            <button id="logout-btn" class="btn btn-secondary" title="Logout">Logout</button>
+          </div>
+        </div>
+      </header>
+
+      <div class="filter-bar hidden" id="filter-bar">
+        <span class="filter-bar-label">Filter by tags:</span>
+        <div class="filter-tags" id="filter-tags-container"></div>
+        <button type="button" class="btn btn-ghost filter-clear-btn hidden" id="filter-clear-btn">Clear filter</button>
+      </div>
+
+      <main class="board-container" id="board-container">
+        <!-- Lists injected by JS -->
+      </main>
+    </div>
+
+    <!-- Dialog Backdrop -->
+    <div class="modal-backdrop hidden" id="modal-backdrop"></div>
+
+    <!-- Add / Edit Board Modal -->
+    <div class="modal hidden" id="board-modal">
+      <div class="modal-content">
+        <h2 id="board-modal-title">New board</h2>
+        <label class="field">
+          <span class="field-label">Board name</span>
+          <input id="board-name-input" class="field-input" type="text" placeholder="e.g. Product roadmap" />
+        </label>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="board-cancel-btn">Cancel</button>
+          <button class="btn btn-primary" id="board-save-btn">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add / Edit List Modal -->
+    <div class="modal hidden" id="list-modal">
+      <div class="modal-content">
+        <h2 id="list-modal-title">New list</h2>
+        <label class="field">
+          <span class="field-label">List title</span>
+          <input id="list-title-input" class="field-input" type="text" placeholder="e.g. To do" />
+        </label>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="list-cancel-btn">Cancel</button>
+          <button class="btn btn-primary" id="list-save-btn">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add / Edit Card Modal -->
+    <div class="modal hidden" id="card-modal">
+      <div class="modal-content">
+        <h2 id="card-modal-title">New card</h2>
+        <label class="field">
+          <span class="field-label">Title</span>
+          <input id="card-title-input" class="field-input" type="text" placeholder="Card title" />
+        </label>
+        <label class="field">
+          <span class="field-label">Description</span>
+          <textarea
+            id="card-description-input"
+            class="field-input field-textarea"
+            rows="4"
+            placeholder="Optional details"
+          ></textarea>
+        </label>
+        <label class="field">
+          <span class="field-label">Priority</span>
+          <select id="card-priority-input" class="field-input field-select">
+            <option value="p0">P0 — Critical</option>
+            <option value="p1">P1 — High</option>
+            <option value="p2">P2 — Medium</option>
+            <option value="p3">P3 — Low</option>
+            <option value="p4">P4 — Lowest</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">Tags</span>
+          <div id="card-tags-chips" class="tags-chips"></div>
+          <input id="card-tag-input" class="field-input" type="text" placeholder="Type a tag and press Enter" />
+        </label>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="card-cancel-btn">Cancel</button>
+          <button class="btn btn-primary" id="card-save-btn">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Email Task Modal -->
+    <div class="modal hidden" id="email-modal">
+      <div class="modal-content">
+        <h2 id="email-modal-title">Email Task</h2>
+        <label class="field">
+          <span class="field-label">Recipient Email</span>
+          <input id="email-recipient-input" class="field-input" type="email" placeholder="recipient@example.com" />
+        </label>
+        <div class="field">
+          <span class="field-label">Task Details</span>
+          <div class="email-preview">
+            <div class="email-preview-item">
+              <strong>Title:</strong> <span id="email-preview-title"></span>
+            </div>
+            <div class="email-preview-item">
+              <strong>Priority:</strong> <span id="email-preview-priority"></span>
+            </div>
+            <div class="email-preview-item">
+              <strong>Description:</strong> <span id="email-preview-description"></span>
+            </div>
+            <div class="email-preview-item">
+              <strong>List:</strong> <span id="email-preview-list"></span>
+            </div>
+            <div class="email-preview-item">
+              <strong>Board:</strong> <span id="email-preview-board"></span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="email-cancel-btn">Cancel</button>
+          <button class="btn btn-primary" id="email-send-btn">Open Email Client</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transcript Modal -->
+    <div class="modal hidden" id="transcript-modal">
+      <div class="modal-content">
+        <h2 id="transcript-modal-title">Import Transcript</h2>
+        <label class="field">
+          <span class="field-label">Paste your audio transcript here</span>
+          <textarea
+            id="transcript-input"
+            class="field-input field-textarea"
+            rows="10"
+            placeholder="Paste transcript text here. Gemini will analyze it and create cards automatically."
+          ></textarea>
+        </label>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="transcript-cancel-btn">Cancel</button>
+          <button class="btn btn-primary" id="transcript-process-btn">Create Cards</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pomodoro Settings Modal -->
+    <div class="modal hidden" id="pomodoro-modal">
+      <div class="modal-content">
+        <h2>Pomodoro Timer</h2>
+        <label class="field">
+          <span class="field-label">Work duration (minutes)</span>
+          <input id="pomodoro-work-minutes" class="field-input" type="number" min="1" max="60" value="25" />
+        </label>
+        <label class="field">
+          <span class="field-label">Rest duration (minutes)</span>
+          <input id="pomodoro-rest-minutes" class="field-input" type="number" min="0" max="30" value="5" />
+        </label>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="pomodoro-modal-cancel">Cancel</button>
+          <button class="btn btn-primary" id="pomodoro-modal-save">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal hidden" id="settings-modal">
+      <div class="modal-content">
+        <h2 id="settings-modal-title">Settings</h2>
+        <label class="field">
+          <span class="field-label">Gemini API Key</span>
+          <input id="gemini-api-key-input" class="field-input" type="password" placeholder="Enter your Gemini API key" />
+          <span class="field-hint">
+            Get your API key from <a href="https://makersuite.google.com/app/apikey" target="_blank" class="link-accent">Google AI Studio</a>
+          </span>
+        </label>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="settings-cancel-btn">Cancel</button>
+          <button class="btn btn-primary" id="settings-save-btn">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="main.js"></script>
+  </body>
+</html>
+
+
