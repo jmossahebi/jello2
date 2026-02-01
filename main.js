@@ -72,11 +72,43 @@ async function registerUser(email, password, confirmPassword) {
   } catch (error) {
     let errorMessage = "Registration failed. Please try again.";
     if (error.code === 'auth/email-already-in-use') {
-      errorMessage = "An account with this email already exists";
+      errorMessage = "An account with this email already exists. Use Sign in instead.";
     } else if (error.code === 'auth/weak-password') {
       errorMessage = "Password is too weak";
     } else if (error.code === 'auth/invalid-email') {
       errorMessage = "Invalid email address";
+    } else if (error.code === 'permission-denied') {
+      errorMessage = "Database permission denied. Check Firestore rules are published.";
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    return { success: false, error: errorMessage };
+  }
+}
+
+// Send password reset email
+async function sendPasswordResetEmail(email) {
+  if (!email || !email.trim()) {
+    return { success: false, error: "Please enter your email address" };
+  }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email.trim())) {
+    return { success: false, error: "Please enter a valid email address" };
+  }
+  if (!window.firebaseAuth) {
+    return { success: false, error: "Password reset is not available" };
+  }
+  try {
+    await window.firebaseAuth.sendPasswordResetEmail(email.trim().toLowerCase());
+    return { success: true };
+  } catch (error) {
+    let errorMessage = "Could not send reset email. Please try again.";
+    if (error.code === "auth/user-not-found") {
+      errorMessage = "No account found with this email address.";
+    } else if (error.code === "auth/invalid-email") {
+      errorMessage = "Invalid email address.";
+    } else if (error.message) {
+      errorMessage = error.message;
     }
     return { success: false, error: errorMessage };
   }
@@ -1227,6 +1259,13 @@ const pomodoroRestMinutesInput = document.getElementById("pomodoro-rest-minutes"
 const pomodoroModalCancelBtn = document.getElementById("pomodoro-modal-cancel");
 const pomodoroModalSaveBtn = document.getElementById("pomodoro-modal-save");
 
+const resetPasswordModal = document.getElementById("reset-password-modal");
+const resetPasswordEmailInput = document.getElementById("reset-password-email-input");
+const resetPasswordMessage = document.getElementById("reset-password-message");
+const resetPasswordSendBtn = document.getElementById("reset-password-send-btn");
+const resetPasswordCancelBtn = document.getElementById("reset-password-cancel-btn");
+const forgotPasswordBtn = document.getElementById("forgot-password-btn");
+
 // Context for editing
 let editingBoardId = null;
 let editingListId = null;
@@ -1249,7 +1288,8 @@ function closeModal(modal) {
       emailModal.classList.contains("hidden") &&
       transcriptModal.classList.contains("hidden") &&
       settingsModal.classList.contains("hidden") &&
-      (pomodoroModal && pomodoroModal.classList.contains("hidden"))) {
+      (pomodoroModal && pomodoroModal.classList.contains("hidden")) &&
+      (resetPasswordModal && resetPasswordModal.classList.contains("hidden"))) {
     backdrop.classList.add("hidden");
   }
 }
@@ -1707,6 +1747,46 @@ if (logoutBtn) {
   });
 }
 
+// Forgot password: open reset modal and pre-fill email from login if present
+if (forgotPasswordBtn) {
+  forgotPasswordBtn.addEventListener("click", () => {
+    if (resetPasswordEmailInput) {
+      resetPasswordEmailInput.value = loginEmailInput ? loginEmailInput.value.trim() : "";
+    }
+    if (resetPasswordMessage) {
+      resetPasswordMessage.textContent = "";
+      resetPasswordMessage.classList.add("hidden");
+    }
+    openModal(resetPasswordModal);
+    if (resetPasswordEmailInput) resetPasswordEmailInput.focus();
+  });
+}
+
+// Reset password: send link
+if (resetPasswordSendBtn) {
+  resetPasswordSendBtn.addEventListener("click", async () => {
+    const email = resetPasswordEmailInput ? resetPasswordEmailInput.value.trim() : "";
+    if (!resetPasswordMessage) return;
+    resetPasswordMessage.textContent = "";
+    resetPasswordMessage.classList.add("hidden");
+
+    const result = await sendPasswordResetEmail(email);
+    if (result.success) {
+      resetPasswordMessage.textContent = "Check your email for a link to reset your password.";
+      resetPasswordMessage.classList.remove("hidden", "auth-error");
+    } else {
+      resetPasswordMessage.textContent = result.error;
+      resetPasswordMessage.classList.add("auth-error");
+      resetPasswordMessage.classList.remove("hidden");
+    }
+  });
+}
+
+// Reset password modal: Cancel
+if (resetPasswordCancelBtn) {
+  resetPasswordCancelBtn.addEventListener("click", () => closeModal(resetPasswordModal));
+}
+
 // ---------- Events ----------
 
 addBoardBtn.addEventListener("click", (e) => {
@@ -1750,13 +1830,14 @@ backdrop.addEventListener("click", (e) => {
   if (e.target === backdrop) {
     const modals = [boardModal, listModal, cardModal, emailModal, transcriptModal, settingsModal];
     if (pomodoroModal) modals.push(pomodoroModal);
+    if (resetPasswordModal) modals.push(resetPasswordModal);
     modals.forEach((m) => m && m.classList.add("hidden"));
     backdrop.classList.add("hidden");
   }
 });
 
 // Prevent modal content clicks from closing the modal
-[boardModal, listModal, cardModal, emailModal, transcriptModal, settingsModal, pomodoroModal].filter(Boolean).forEach((modal) => {
+[boardModal, listModal, cardModal, emailModal, transcriptModal, settingsModal, pomodoroModal, resetPasswordModal].filter(Boolean).forEach((modal) => {
   const content = modal.querySelector(".modal-content");
   if (content) {
     content.addEventListener("click", (e) => {

@@ -27,6 +27,9 @@
             <span class="field-label">Password</span>
             <input id="login-password-input" class="field-input" type="password" placeholder="••••••••" autocomplete="current-password" />
           </label>
+          <div class="auth-switch">
+            <button type="button" id="forgot-password-btn" class="btn-link">Forgot password?</button>
+          </div>
           <div id="login-error" class="auth-error hidden"></div>
           <button type="button" id="login-btn" class="btn btn-primary">Sign in</button>
           <div class="auth-switch">
@@ -273,6 +276,23 @@
         <div class="modal-actions">
           <button class="btn btn-ghost" id="pomodoro-modal-cancel">Cancel</button>
           <button class="btn btn-primary" id="pomodoro-modal-save">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reset Password Modal -->
+    <div class="modal hidden" id="reset-password-modal">
+      <div class="modal-content">
+        <h2>Reset password</h2>
+        <p class="field-hint">Enter your email and we'll send you a link to reset your password.</p>
+        <label class="field">
+          <span class="field-label">Email</span>
+          <input id="reset-password-email-input" class="field-input" type="email" placeholder="you@example.com" autocomplete="email" />
+        </label>
+        <div id="reset-password-message" class="auth-error hidden"></div>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="reset-password-cancel-btn">Cancel</button>
+          <button class="btn btn-primary" id="reset-password-send-btn">Send reset link</button>
         </div>
       </div>
     </div>
