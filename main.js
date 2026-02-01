@@ -27,6 +27,8 @@ let currentUser = null;
 let isDemoMode = false;
 // Registration in progress flag (prevents onAuthStateChanged race condition)
 let isRegistering = false;
+// True while sign-in is in progress (stops auth listener from showing auth screen on spurious null)
+let isSigningIn = false;
 
 // Active tag filter on current board (array of tag strings; empty = show all)
 let activeTagFilter = [];
@@ -225,6 +227,7 @@ function setupAuthListener() {
     }
 
     if (user) {
+      isSigningIn = false; // sign-in completed
       currentUser = {
         uid: user.uid,
         email: user.email
@@ -245,6 +248,10 @@ function setupAuthListener() {
       showAppContent();
       initApp();
     } else {
+      // Don't show auth screen if we're in the middle of signing in (avoids race where listener fires with null)
+      if (isSigningIn) {
+        return;
+      }
       currentUser = null;
       isDemoMode = false;
       showAuthScreen();
@@ -1800,13 +1807,19 @@ document.addEventListener("click", async (e) => {
       errEl.textContent = "";
       errEl.classList.add("hidden");
     }
-    const result = await loginUser(email, password);
-    if (result.success) {
-      showAppContent();
-      await initApp();
-    } else if (errEl) {
-      errEl.textContent = result.error;
-      errEl.classList.remove("hidden");
+    isSigningIn = true;
+    try {
+      const result = await loginUser(email, password);
+      if (result.success) {
+        showAppContent();
+        await initApp();
+      } else if (errEl) {
+        errEl.textContent = result.error;
+        errEl.classList.remove("hidden");
+      }
+    } finally {
+      // Clear after a short delay so any delayed auth listener callback doesn't override
+      setTimeout(function () { isSigningIn = false; }, 500);
     }
     return;
   }
@@ -2533,7 +2546,8 @@ async function init() {
   try {
     if (window.firebaseAuth) {
       setupAuthListener();
-      showAuthScreen();
+      // Don't call showAuthScreen() here — auth-screen is visible by default in HTML.
+      // onAuthStateChanged will call showAppContent() if user is logged in, or showAuthScreen() if null.
     } else {
       enterDemoMode();
     }
