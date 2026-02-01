@@ -32,7 +32,10 @@
             </label>
             <label class="field">
               <span class="field-label">Password</span>
-              <input id="login-password-input" class="field-input" type="password" placeholder="••••••••" autocomplete="current-password" />
+              <div class="password-field-wrapper">
+                <input id="login-password-input" class="field-input" type="password" placeholder="••••••••" autocomplete="current-password" />
+                <button type="button" class="password-toggle-btn" data-target="login-password-input" aria-label="Show password">👁</button>
+              </div>
             </label>
             <p class="auth-forgot-row">
               <button type="button" id="forgot-password-btn" class="btn-link auth-forgot-btn">Forgot password?</button>
@@ -54,11 +57,17 @@
             </label>
             <label class="field">
               <span class="field-label">Password</span>
-              <input id="register-password-input" class="field-input" type="password" placeholder="••••••••" autocomplete="new-password" />
+              <div class="password-field-wrapper">
+                <input id="register-password-input" class="field-input" type="password" placeholder="••••••••" autocomplete="new-password" />
+                <button type="button" class="password-toggle-btn" data-target="register-password-input" aria-label="Show password">👁</button>
+              </div>
             </label>
             <label class="field">
               <span class="field-label">Confirm password</span>
-              <input id="register-confirm-password-input" class="field-input" type="password" placeholder="••••••••" autocomplete="new-password" />
+              <div class="password-field-wrapper">
+                <input id="register-confirm-password-input" class="field-input" type="password" placeholder="••••••••" autocomplete="new-password" />
+                <button type="button" class="password-toggle-btn" data-target="register-confirm-password-input" aria-label="Show password">👁</button>
+              </div>
             </label>
             <div id="register-error" class="auth-error hidden"></div>
             <button type="button" id="register-btn" class="btn btn-primary">Sign up</button>

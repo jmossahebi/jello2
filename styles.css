@@ -748,6 +748,43 @@ body {
   box-shadow: 0 0 0 1px var(--border-focus);
 }
 
+.password-field-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-field-wrapper .field-input {
+  flex: 1;
+  padding-right: 2.5rem;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 0.5rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  font-size: 1rem;
+  opacity: 0.6;
+  transition: opacity 0.15s ease;
+  line-height: 1;
+}
+
+.password-toggle-btn:hover {
+  opacity: 1;
+}
+
+.password-toggle-btn:focus {
+  outline: none;
+  opacity: 1;
+}
+
+.password-toggle-btn.active {
+  opacity: 1;
+}
+
 .field-select {
   cursor: pointer;
   appearance: none;

@@ -33,6 +33,10 @@ let isDemoMode = false;
 let isRegistering = false;
 // True while sign-in is in progress (stops auth listener from showing auth screen on spurious null)
 let isSigningIn = false;
+// Prevents double initialization from both login handler and auth listener
+let appInitialized = false;
+// Promise that resolves when app initialization completes (for coordination)
+let appInitPromise = null;
 
 // Active tag filter on current board (array of tag strings; empty = show all)
 let activeTagFilter = [];
@@ -261,10 +265,18 @@ function setupAuthListener() {
       if (isRegistering) {
         return;
       }
+      // Prevent double initialization - if app is already initialized or initializing, skip
+      if (appInitialized || appInitPromise) {
+        showAppContent();
+        return;
+      }
       showAppContent();
       try {
-        await initApp();
+        appInitPromise = initApp();
+        await appInitPromise;
+        appInitialized = true;
       } catch (err) {
+        appInitPromise = null;
         showAppLoadError(getFriendlyLoadError(err));
       }
     } else {
@@ -274,6 +286,9 @@ function setupAuthListener() {
       }
       currentUser = null;
       isDemoMode = false;
+      // Reset initialization state on logout
+      appInitialized = false;
+      appInitPromise = null;
       showAuthScreen();
     }
   });
@@ -498,19 +513,22 @@ async function loadState() {
 
 /** Return a user-friendly message when sign-in succeeded but loading the board failed */
 function getFriendlyLoadError(error) {
-  if (!error) return "We couldn't load your board. Please refresh the page or try again.";
+  if (!error) return "Sign-in successful, but we couldn't load your board. Please refresh the page or try again.";
   const code = error.code || "";
   const msg = (error.message || "").toLowerCase();
   if (code === "permission-denied" || msg.includes("permission")) {
-    return "We couldn't load your board. Please refresh the page or try again.";
+    return "Sign-in successful, but database access was denied. Please refresh and try again, or contact support if this persists.";
   }
   if (code === "unavailable" || msg.includes("unavailable") || msg.includes("network")) {
-    return "We couldn't reach the server. Check your internet connection and try again.";
+    return "Sign-in successful, but we couldn't reach the database. Check your internet connection and try again.";
   }
   if (msg.includes("failed to fetch") || msg.includes("network error")) {
-    return "Network error. Check your connection and try again.";
+    return "Sign-in successful, but a network error occurred. Check your connection and try again.";
   }
-  return "We couldn't load your board. Please refresh the page or try again. If it keeps happening, check your connection.";
+  if (msg.includes("timeout") || code === "deadline-exceeded") {
+    return "Sign-in successful, but loading your board timed out. Please refresh and try again.";
+  }
+  return "Sign-in successful, but we couldn't load your board. Please refresh the page or try again.";
 }
 
 /** Show a dismissible banner at the top of the app when the board failed to load after sign-in */
@@ -1823,6 +1841,28 @@ function getDragAfterElement(container, y) {
 
 // ---------- Auth Events ----------
 
+// Password visibility toggle
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".password-toggle-btn");
+  if (!btn) return;
+
+  const targetId = btn.getAttribute("data-target");
+  const input = document.getElementById(targetId);
+  if (!input) return;
+
+  if (input.type === "password") {
+    input.type = "text";
+    btn.textContent = "🙈";
+    btn.classList.add("active");
+    btn.setAttribute("aria-label", "Hide password");
+  } else {
+    input.type = "password";
+    btn.textContent = "👁";
+    btn.classList.remove("active");
+    btn.setAttribute("aria-label", "Show password");
+  }
+});
+
 // Resolve id from clicked element (clicking button text can make e.target a child without id)
 function getClickedId(e) {
   const el = e.target && e.target.closest ? e.target.closest("[id]") : e.target;
@@ -1882,29 +1922,49 @@ document.addEventListener("click", async (e) => {
       errEl.classList.add("hidden");
     }
     isSigningIn = true;
+    // Reset initialization state for fresh login
+    appInitialized = false;
+    appInitPromise = null;
     try {
       const result = await loginUser(email, password);
       if (result.success) {
-        try {
-          showAppContent();
-          await initApp();
-        } catch (loadErr) {
-          var loadBanner = document.getElementById("app-load-error-banner");
-          if (loadBanner) loadBanner.classList.add("hidden");
-          showAuthScreen();
-          showLoginScreen();
+        // Auth listener will handle showAppContent() and initApp()
+        // Wait for initialization to complete (with timeout)
+        const initTimeout = 15000; // 15 second timeout
+        const startTime = Date.now();
+        while (!appInitialized && (Date.now() - startTime) < initTimeout) {
+          if (appInitPromise) {
+            try {
+              await appInitPromise;
+              break;
+            } catch (loadErr) {
+              var loadBanner = document.getElementById("app-load-error-banner");
+              if (loadBanner) loadBanner.classList.add("hidden");
+              showAuthScreen();
+              showLoginScreen();
+              if (errEl) {
+                errEl.textContent = getFriendlyLoadError(loadErr);
+                errEl.classList.remove("hidden");
+              }
+              return;
+            }
+          }
+          await new Promise(r => setTimeout(r, 50));
+        }
+        if (!appInitialized && (Date.now() - startTime) >= initTimeout) {
           if (errEl) {
-            errEl.textContent = getFriendlyLoadError(loadErr);
+            errEl.textContent = "Login timed out. Please try again.";
             errEl.classList.remove("hidden");
           }
+          showAuthScreen();
+          showLoginScreen();
         }
       } else if (errEl) {
         errEl.textContent = result.error;
         errEl.classList.remove("hidden");
       }
     } finally {
-      // Clear after a short delay so any delayed auth listener callback doesn't override
-      setTimeout(function () { isSigningIn = false; }, 500);
+      isSigningIn = false;
     }
     return;
   }
@@ -1921,13 +1981,20 @@ document.addEventListener("click", async (e) => {
       errEl.textContent = "";
       errEl.classList.add("hidden");
     }
+    // Reset initialization state for fresh registration
+    appInitialized = false;
+    appInitPromise = null;
     // registerUser() already creates the user and signs them in, so we don't need to call loginUser again
     const result = await registerUser(email, password, confirmPassword);
     if (result.success) {
       try {
         showAppContent();
-        await initApp();
+        // Initialize app directly (registration creates initial state, so we handle it here)
+        appInitPromise = initApp();
+        await appInitPromise;
+        appInitialized = true;
       } catch (loadErr) {
+        appInitPromise = null;
         var loadBanner = document.getElementById("app-load-error-banner");
         if (loadBanner) loadBanner.classList.add("hidden");
         showAuthScreen();
@@ -2584,11 +2651,10 @@ async function initApp() {
   if (window.firebaseAuth && window.firebaseAuth.currentUser) {
     try {
       await window.firebaseAuth.currentUser.getIdToken(true);
-      // Wait for token to propagate so Firestore accepts the first request
-      await new Promise(function(r) { setTimeout(r, 600); });
     } catch (_) {}
   }
 
+  // Load state (has built-in retry logic for token propagation issues)
   await loadState();
 
   // For new sign-ups the default board is created in registerUser(); existing users may have no state yet
