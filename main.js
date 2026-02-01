@@ -1,5 +1,9 @@
 const APP_VERSION = "0.2";
 
+// When true: skip login/register flow and open directly on kanban (demo mode / localStorage).
+// Set to false to restore auth flow.
+const SKIP_LOGIN_OPEN_KANBAN = true;
+
 const STORAGE_KEY = "trelloCloneState.v1";
 const EMAIL_SETTINGS_KEY = "trelloCloneEmailSettings.v1";
 const GEMINI_SETTINGS_KEY = "trelloCloneGeminiSettings.v1";
@@ -2636,6 +2640,11 @@ async function init() {
   if (regErrEl) regErrEl.textContent = "";
 
   try {
+    if (SKIP_LOGIN_OPEN_KANBAN) {
+      // Bypass auth: open directly on kanban (demo mode, localStorage).
+      await enterDemoMode();
+      return;
+    }
     if (window.firebaseAuth) {
       setupAuthListener();
       // Don't call showAuthScreen() here — auth-screen is visible by default in HTML.
