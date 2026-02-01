@@ -355,21 +355,28 @@ async function loadState() {
       stateUnsubscribe();
     }
 
-    stateUnsubscribe = window.firebaseDb.collection('users').doc(currentUser.uid).collection('data').doc('state').onSnapshot((doc) => {
-      if (doc.exists) {
-        const data = doc.data();
-        if (data && Array.isArray(data.boards)) {
-          // Only update if data actually changed (avoid infinite loops)
-          const newBoards = JSON.stringify(data.boards);
-          const currentBoards = JSON.stringify(state.boards);
-          if (newBoards !== currentBoards) {
-            state.boards = data.boards;
-            state.activeBoardId = data.activeBoardId || (data.boards[0] && data.boards[0].id) || null;
-            render();
+    stateUnsubscribe = window.firebaseDb.collection('users').doc(currentUser.uid).collection('data').doc('state').onSnapshot(
+      (doc) => {
+        if (doc.exists) {
+          const data = doc.data();
+          if (data && Array.isArray(data.boards)) {
+            const newBoards = JSON.stringify(data.boards);
+            const currentBoards = JSON.stringify(state.boards);
+            if (newBoards !== currentBoards) {
+              state.boards = data.boards;
+              state.activeBoardId = data.activeBoardId || (data.boards[0] && data.boards[0].id) || null;
+              render();
+            }
           }
         }
+      },
+      (err) => {
+        console.error("Error in snapshot listener:", err);
+        if (err && err.code === "permission-denied") {
+          showFirestorePermissionBanner();
+        }
       }
-    });
+    );
   } catch (error) {
     console.error("Error loading state:", error);
     if (error.code === "permission-denied") {
