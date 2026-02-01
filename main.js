@@ -461,24 +461,32 @@ async function loadState() {
     attachStateListener();
   }
 
-  try {
-    await tryLoadState();
-  } catch (error) {
-    console.error("Firestore loadState error:", error && error.code, error && error.message, "path: users/" + currentUser.uid + "/data/state");
-    if (error && error.code === "permission-denied") {
-      // Auth token can lag after login; retry once after a short delay
-      await new Promise(function (r) { setTimeout(r, 800); });
-      try {
+  var lastError = null;
+  var attempt = 0;
+  var maxAttempts = 3;
+
+  while (attempt < maxAttempts) {
+    try {
+      await tryLoadState();
+      break;
+    } catch (error) {
+      lastError = error;
+      console.error("Firestore loadState error:", error && error.code, error && error.message, "path: users/" + currentUser.uid + "/data/state");
+      if (error && error.code === "permission-denied" && attempt < maxAttempts - 1) {
+        attempt++;
+        var delay = attempt === 1 ? 800 : 1200;
+        await new Promise(function (r) { setTimeout(r, delay); });
         if (window.firebaseAuth && window.firebaseAuth.currentUser) {
           try { await window.firebaseAuth.currentUser.getIdToken(true); } catch (_) {}
         }
-        await tryLoadState();
-      } catch (retryError) {
-        console.error("Firestore loadState retry error:", retryError && retryError.code, retryError && retryError.message);
-        showFirestorePermissionBanner();
+      } else {
+        if (error && error.code === "permission-denied") {
+          showFirestorePermissionBanner();
+        } else {
+          throw error;
+        }
+        break;
       }
-    } else {
-      throw error;
     }
   }
 }
@@ -489,7 +497,7 @@ function getFriendlyLoadError(error) {
   const code = error.code || "";
   const msg = (error.message || "").toLowerCase();
   if (code === "permission-denied" || msg.includes("permission")) {
-    return "You're signed in but we don't have permission to load your board. The app owner may need to update the database rules (see FIREBASE_SETUP.md).";
+    return "We couldn't load your board. Please refresh the page or try again.";
   }
   if (code === "unavailable" || msg.includes("unavailable") || msg.includes("network")) {
     return "We couldn't reach the server. Check your internet connection and try again.";
@@ -533,7 +541,7 @@ function showFirestorePermissionBanner() {
   const banner = document.createElement("div");
   banner.id = "firestore-permission-banner";
   banner.style.cssText = "position:fixed;top:0;left:0;right:0;background:#b91c1c;color:#fff;padding:10px 16px;text-align:center;font-size:13px;z-index:1000;line-height:1.4;";
-  banner.innerHTML = "You're signed in but we couldn't load your board. This usually means the app's database rules aren't set up correctly. If you run this app, open Firestore Database → Rules in Firebase Console, paste the rules from <code>firestore.rules</code>, then click <strong>Publish</strong>. See FIREBASE_SETUP.md for details.";
+  banner.textContent = "We couldn't load your board. Please refresh the page or try again.";
   document.body.appendChild(banner);
 }
 
@@ -2572,12 +2580,12 @@ async function initApp() {
   // Initialize Pomodoro timer
   initPomodoro();
 
-  // Ensure auth token is ready before first Firestore read (avoids "Missing or insufficient permissions" on fast login)
+  // Ensure auth token is ready before first Firestore read (avoids permission-denied on fast login / page load)
   if (window.firebaseAuth && window.firebaseAuth.currentUser) {
     try {
       await window.firebaseAuth.currentUser.getIdToken(true);
-      // Small delay to allow token propagation to Firestore
-      await new Promise(function(r) { setTimeout(r, 300); });
+      // Wait for token to propagate so Firestore accepts the first request
+      await new Promise(function(r) { setTimeout(r, 600); });
     } catch (_) {}
   }
 
