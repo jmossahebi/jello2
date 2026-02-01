@@ -189,6 +189,9 @@ function getCurrentUser() {
 // Listen for auth state changes
 function setupAuthListener() {
   window.firebaseAuth.onAuthStateChanged((user) => {
+    // #region agent log
+    _dbg({location:'main.js:onAuthStateChanged',message:'auth state',data:{hasUser:!!user,isDemoMode},hypothesisId:'H6-auth-state'});
+    // #endregion
     // Don't interfere if in demo mode
     if (isDemoMode) {
       return;
@@ -220,6 +223,10 @@ function setupAuthListener() {
 
 // Show login screen (hide register and app)
 function showLoginScreen() {
+  // #region agent log
+  const _ls = document.getElementById("login-screen"); const _rs = document.getElementById("register-screen");
+  _dbg({location:'main.js:showLoginScreen',message:'showing login',data:{hasLoginEl:!!_ls,hasRegisterEl:!!_rs,loginHiddenBefore:_ls?_ls.classList.contains('hidden'):null},hypothesisId:'H4-show-login'});
+  // #endregion
   const loginScreen = document.getElementById("login-screen");
   const registerScreen = document.getElementById("register-screen");
   const appContent = document.getElementById("app-content");
@@ -230,6 +237,9 @@ function showLoginScreen() {
 
 // Show register screen (hide login and app)
 function showRegisterScreen() {
+  // #region agent log
+  _dbg({location:'main.js:showRegisterScreen',message:'showing register',data:{caller:new Error().stack?.split('\n')[2]?.trim()},hypothesisId:'H5-show-register'});
+  // #endregion
   const loginScreen = document.getElementById("login-screen");
   const registerScreen = document.getElementById("register-screen");
   const appContent = document.getElementById("app-content");
@@ -303,6 +313,9 @@ async function saveState() {
     }
   } catch (error) {
     console.error("Error saving state:", error);
+    if (error.code === "permission-denied") {
+      showFirestorePermissionBanner();
+    }
   }
 }
 
@@ -363,7 +376,19 @@ async function loadState() {
     });
   } catch (error) {
     console.error("Error loading state:", error);
+    if (error.code === "permission-denied") {
+      showFirestorePermissionBanner();
+    }
   }
+}
+
+function showFirestorePermissionBanner() {
+  if (document.getElementById("firestore-permission-banner")) return;
+  const banner = document.createElement("div");
+  banner.id = "firestore-permission-banner";
+  banner.style.cssText = "position:fixed;top:0;left:0;right:0;background:#b91c1c;color:#fff;padding:8px 16px;text-align:center;font-size:13px;z-index:1000;";
+  banner.textContent = "Firestore permission denied. In Firebase Console go to Firestore Database → Rules, check the rules match your app, and click Publish.";
+  document.body.appendChild(banner);
 }
 
 // ---------- Demo Mode ----------
@@ -2349,6 +2374,13 @@ async function initApp() {
   // Initialize Pomodoro timer
   initPomodoro();
 
+  // Ensure auth token is ready before first Firestore read (avoids "Missing or insufficient permissions" on fast login)
+  if (window.firebaseAuth && window.firebaseAuth.currentUser) {
+    try {
+      await window.firebaseAuth.currentUser.getIdToken(true);
+    } catch (_) {}
+  }
+
   await loadState();
 
   if (state.boards.length === 0) {
@@ -2385,7 +2417,18 @@ async function initApp() {
   }, 60 * 60 * 1000); // Check every hour
 }
 
+// #region agent log
+function _dbg(payload) {
+  var line = '[DBG] ' + payload.location + ' | ' + payload.message + ' | ' + JSON.stringify(payload.data || {});
+  console.log(line);
+  fetch('http://127.0.0.1:7242/ingest/854066e4-ab40-45ec-ac60-bd719651784c',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...payload,timestamp:Date.now(),sessionId:'debug-session'})}).catch(function(){});
+}
+// #endregion
+
 async function init() {
+  // #region agent log
+  _dbg({location:'main.js:init',message:'init entry',data:{firebaseAuth:!!window.firebaseAuth},hypothesisId:'H1-init-branch'});
+  // #endregion
   var versionEl = document.getElementById("app-version");
   if (versionEl) versionEl.textContent = "v" + APP_VERSION;
 
@@ -2396,9 +2439,15 @@ async function init() {
 
   try {
     if (window.firebaseAuth) {
+      // #region agent log
+      _dbg({location:'main.js:init',message:'calling setupAuthListener + showAuthScreen',data:{},hypothesisId:'H2-firebase-path'});
+      // #endregion
       setupAuthListener();
       showAuthScreen();
     } else {
+      // #region agent log
+      _dbg({location:'main.js:init',message:'calling enterDemoMode',data:{},hypothesisId:'H3-demo-path'});
+      // #endregion
       enterDemoMode();
     }
   } catch (err) {
