@@ -12,7 +12,63 @@
     <script src="firebase-config.js"></script>
   </head>
   <body>
-    <!-- Login/registration disabled – app opens directly on Kanban board -->
+    <!-- Login screen (shown when Firebase configured and no user) -->
+    <div id="login-screen" class="auth-screen hidden">
+      <div class="auth-container">
+        <div class="auth-header">
+          <h1>Sign in</h1>
+        </div>
+        <form class="auth-form" id="login-form" onsubmit="return false;">
+          <label class="field">
+            <span class="field-label">Email</span>
+            <input id="login-email-input" class="field-input" type="email" placeholder="you@example.com" autocomplete="email" />
+          </label>
+          <label class="field">
+            <span class="field-label">Password</span>
+            <input id="login-password-input" class="field-input" type="password" placeholder="••••••••" autocomplete="current-password" />
+          </label>
+          <div id="login-error" class="auth-error hidden"></div>
+          <button type="button" id="login-btn" class="btn btn-primary">Sign in</button>
+          <div class="auth-switch">
+            <span>Don't have an account?</span>
+            <button type="button" id="go-to-register-btn" class="btn-link">Sign up</button>
+          </div>
+          <button type="button" id="demo-btn" class="btn btn-secondary">Try demo</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Register screen -->
+    <div id="register-screen" class="auth-screen hidden">
+      <div class="auth-container">
+        <div class="auth-header">
+          <h1>Create account</h1>
+        </div>
+        <form class="auth-form" id="register-form" onsubmit="return false;">
+          <label class="field">
+            <span class="field-label">Email</span>
+            <input id="register-email-input" class="field-input" type="email" placeholder="you@example.com" autocomplete="email" />
+          </label>
+          <label class="field">
+            <span class="field-label">Password</span>
+            <input id="register-password-input" class="field-input" type="password" placeholder="••••••••" autocomplete="new-password" />
+          </label>
+          <label class="field">
+            <span class="field-label">Confirm password</span>
+            <input id="register-confirm-password-input" class="field-input" type="password" placeholder="••••••••" autocomplete="new-password" />
+          </label>
+          <div id="register-error" class="auth-error hidden"></div>
+          <button type="button" id="register-btn" class="btn btn-primary">Sign up</button>
+          <div class="auth-switch">
+            <span>Already have an account?</span>
+            <button type="button" id="go-to-login-btn" class="btn-link">Sign in</button>
+          </div>
+          <button type="button" id="demo-btn-register" class="btn btn-secondary">Try demo</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- App content (Kanban board) -->
     <div class="app" id="app-content">
       <div class="world-clock-container" id="world-clock-container">
         <div class="world-clock-header">

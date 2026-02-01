@@ -120,7 +120,7 @@ async function loginUser(email, password) {
   }
 }
 
-// Logout user (login disabled – always stay on board in demo mode)
+// Logout user
 function logoutUser() {
   if (isDemoMode) {
     exitDemoMode();
@@ -131,7 +131,7 @@ function logoutUser() {
   }
   currentUser = null;
   isDemoMode = false;
-  enterDemoMode();
+  showAuthScreen();
 }
 
 // Get current authenticated user from Firebase
@@ -173,23 +173,34 @@ function setupAuthListener() {
     } else {
       currentUser = null;
       isDemoMode = false;
-      // Skip login: auto-enter demo mode for testing without an account
-      enterDemoMode();
+      showAuthScreen();
     }
   });
 }
 
-// Login/registration disabled – app always opens on Kanban board
+// Show login screen (hide register and app)
 function showLoginScreen() {
-  showAppContent();
+  const loginScreen = document.getElementById("login-screen");
+  const registerScreen = document.getElementById("register-screen");
+  const appContent = document.getElementById("app-content");
+  if (loginScreen) loginScreen.classList.remove("hidden");
+  if (registerScreen) registerScreen.classList.add("hidden");
+  if (appContent) appContent.classList.add("hidden");
 }
 
+// Show register screen (hide login and app)
 function showRegisterScreen() {
-  showAppContent();
+  const loginScreen = document.getElementById("login-screen");
+  const registerScreen = document.getElementById("register-screen");
+  const appContent = document.getElementById("app-content");
+  if (loginScreen) loginScreen.classList.add("hidden");
+  if (registerScreen) registerScreen.classList.remove("hidden");
+  if (appContent) appContent.classList.add("hidden");
 }
 
+// Show auth screen (default: login)
 function showAuthScreen() {
-  showAppContent();
+  showLoginScreen();
 }
 
 // Show app content
@@ -1611,11 +1622,17 @@ if (loginBtn) {
     const email = loginEmailInput.value.trim();
     const password = loginPasswordInput.value;
 
-    if (loginError) loginError.textContent = "";
+    if (loginError) {
+      loginError.textContent = "";
+      loginError.classList.add("hidden");
+    }
 
     const result = await loginUser(email, password);
     if (!result.success) {
-      if (loginError) loginError.textContent = result.error;
+      if (loginError) {
+        loginError.textContent = result.error;
+        loginError.classList.remove("hidden");
+      }
     }
     // Firebase auth listener will handle showing the app
   });
@@ -1637,14 +1654,20 @@ if (registerBtn) {
     const password = registerPasswordInput.value;
     const confirmPassword = registerConfirmPasswordInput.value;
 
-    if (registerError) registerError.textContent = "";
+    if (registerError) {
+      registerError.textContent = "";
+      registerError.classList.add("hidden");
+    }
 
     const result = await registerUser(email, password, confirmPassword);
     if (result.success) {
       // Auto-login after registration - Firebase auth listener will handle showing the app
       await loginUser(email, password);
     } else {
-      if (registerError) registerError.textContent = result.error;
+      if (registerError) {
+        registerError.textContent = result.error;
+        registerError.classList.remove("hidden");
+      }
     }
   });
 
@@ -2291,17 +2314,22 @@ async function initApp() {
 }
 
 async function init() {
-  // Login flows disabled – always open on the Kanban board (demo mode)
-  try {
-    enterDemoMode();
-  } catch (err) {
-    console.warn("Init error:", err);
-    enterDemoMode();
-  }
   var errEl = document.getElementById("login-error");
   var regErrEl = document.getElementById("register-error");
   if (errEl) errEl.textContent = "";
   if (regErrEl) regErrEl.textContent = "";
+
+  try {
+    if (window.firebaseAuth) {
+      setupAuthListener();
+      showAuthScreen();
+    } else {
+      enterDemoMode();
+    }
+  } catch (err) {
+    console.warn("Init error:", err);
+    enterDemoMode();
+  }
 }
 
 
