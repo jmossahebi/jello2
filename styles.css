@@ -791,6 +791,16 @@ body {
   color: var(--text-muted);
 }
 
+.auth-forgot-row {
+  margin: 0.25rem 0 0;
+  font-size: 0.9rem;
+}
+
+.auth-forgot-link {
+  font-size: 0.9rem;
+  color: var(--accent);
+}
+
 .btn-link {
   background: none;
   border: none;

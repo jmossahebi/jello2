@@ -27,9 +27,9 @@
             <span class="field-label">Password</span>
             <input id="login-password-input" class="field-input" type="password" placeholder="••••••••" autocomplete="current-password" />
           </label>
-          <div class="auth-switch">
-            <button type="button" id="forgot-password-btn" class="btn-link">Forgot password?</button>
-          </div>
+          <p class="auth-forgot-row">
+            <button type="button" id="forgot-password-btn" class="btn-link auth-forgot-link">Forgot password?</button>
+          </p>
           <div id="login-error" class="auth-error hidden"></div>
           <button type="button" id="login-btn" class="btn btn-primary">Sign in</button>
           <div class="auth-switch">
@@ -71,8 +71,8 @@
       </div>
     </div>
 
-    <!-- App content (Kanban board) -->
-    <div class="app" id="app-content">
+    <!-- App content (Kanban board) - hidden until logged in or demo -->
+    <div class="app hidden" id="app-content">
       <div class="world-clock-container" id="world-clock-container">
         <div class="world-clock-header">
           <span class="world-clock-title">🌍 World Clock</span>

@@ -54,6 +54,9 @@ async function registerUser(email, password, confirmPassword) {
   if (password !== confirmPassword) {
     return { success: false, error: "Passwords do not match" };
   }
+  if (!window.firebaseAuth || !window.firebaseDb) {
+    return { success: false, error: "Sign-up is not available. Try demo mode." };
+  }
 
   try {
     // Create user with Firebase Auth
@@ -119,6 +122,9 @@ async function loginUser(email, password) {
   // Validate inputs
   if (!email || !password) {
     return { success: false, error: "Email and password are required" };
+  }
+  if (!window.firebaseAuth) {
+    return { success: false, error: "Sign-in is not available. Try demo mode." };
   }
 
   try {
@@ -1642,97 +1648,95 @@ function getDragAfterElement(container, y) {
 
 // ---------- Auth Events ----------
 
-// Navigate to registration screen
-if (goToRegisterBtn) {
-  goToRegisterBtn.addEventListener("click", () => {
+// Use event delegation so auth screen buttons always work (no dependency on refs)
+document.addEventListener("click", async (e) => {
+  const id = e.target.id;
+  if (!id) return;
+
+  if (id === "go-to-register-btn") {
+    e.preventDefault();
     showRegisterScreen();
-  });
-}
-
-// Navigate to login screen
-if (goToLoginBtn) {
-  goToLoginBtn.addEventListener("click", () => {
-    showLoginScreen();
-  });
-}
-
-// Handle login
-if (loginBtn) {
-  loginBtn.addEventListener("click", async () => {
-    const email = loginEmailInput.value.trim();
-    const password = loginPasswordInput.value;
-
-    if (loginError) {
-      loginError.textContent = "";
-      loginError.classList.add("hidden");
-    }
-
-    const result = await loginUser(email, password);
-    if (!result.success) {
-      if (loginError) {
-        loginError.textContent = result.error;
-        loginError.classList.remove("hidden");
-      }
-    }
-    // Firebase auth listener will handle showing the app
-  });
-
-  // Allow Enter key to submit login
-  if (loginPasswordInput) {
-    loginPasswordInput.addEventListener("keydown", async (e) => {
-      if (e.key === "Enter") {
-        loginBtn.click();
-      }
-    });
+    return;
   }
-}
-
-// Handle registration
-if (registerBtn) {
-  registerBtn.addEventListener("click", async () => {
-    const email = registerEmailInput.value.trim();
-    const password = registerPasswordInput.value;
-    const confirmPassword = registerConfirmPasswordInput.value;
-
-    if (registerError) {
-      registerError.textContent = "";
-      registerError.classList.add("hidden");
+  if (id === "go-to-login-btn") {
+    e.preventDefault();
+    showLoginScreen();
+    return;
+  }
+  if (id === "demo-btn" || id === "demo-btn-register") {
+    e.preventDefault();
+    e.stopPropagation();
+    enterDemoMode();
+    return;
+  }
+  if (id === "forgot-password-btn") {
+    e.preventDefault();
+    const emailEl = document.getElementById("login-email-input");
+    const resetEmailEl = document.getElementById("reset-password-email-input");
+    const resetMsgEl = document.getElementById("reset-password-message");
+    if (resetEmailEl) resetEmailEl.value = emailEl ? emailEl.value.trim() : "";
+    if (resetMsgEl) {
+      resetMsgEl.textContent = "";
+      resetMsgEl.classList.add("hidden");
     }
-
+    openModal(resetPasswordModal);
+    if (resetEmailEl) resetEmailEl.focus();
+    return;
+  }
+  if (id === "login-btn") {
+    e.preventDefault();
+    const emailEl = document.getElementById("login-email-input");
+    const passwordEl = document.getElementById("login-password-input");
+    const errEl = document.getElementById("login-error");
+    const email = emailEl ? emailEl.value.trim() : "";
+    const password = passwordEl ? passwordEl.value : "";
+    if (errEl) {
+      errEl.textContent = "";
+      errEl.classList.add("hidden");
+    }
+    const result = await loginUser(email, password);
+    if (!result.success && errEl) {
+      errEl.textContent = result.error;
+      errEl.classList.remove("hidden");
+    }
+    return;
+  }
+  if (id === "register-btn") {
+    e.preventDefault();
+    const emailEl = document.getElementById("register-email-input");
+    const passwordEl = document.getElementById("register-password-input");
+    const confirmEl = document.getElementById("register-confirm-password-input");
+    const errEl = document.getElementById("register-error");
+    const email = emailEl ? emailEl.value.trim() : "";
+    const password = passwordEl ? passwordEl.value : "";
+    const confirmPassword = confirmEl ? confirmEl.value : "";
+    if (errEl) {
+      errEl.textContent = "";
+      errEl.classList.add("hidden");
+    }
     const result = await registerUser(email, password, confirmPassword);
     if (result.success) {
-      // Auto-login after registration - Firebase auth listener will handle showing the app
       await loginUser(email, password);
-    } else {
-      if (registerError) {
-        registerError.textContent = result.error;
-        registerError.classList.remove("hidden");
-      }
+    } else if (errEl) {
+      errEl.textContent = result.error;
+      errEl.classList.remove("hidden");
     }
-  });
-
-  // Allow Enter key to submit registration
-  if (registerConfirmPasswordInput) {
-    registerConfirmPasswordInput.addEventListener("keydown", async (e) => {
-      if (e.key === "Enter") {
-        registerBtn.click();
-      }
-    });
+    return;
   }
-}
+});
 
-// Handle demo mode (login and register screens)
-function handleDemoClick(e) {
-  e.preventDefault();
-  e.stopPropagation();
-  enterDemoMode();
-}
-if (demoBtn) {
-  demoBtn.addEventListener("click", handleDemoClick);
-}
-if (demoBtnRegister) {
-  demoBtnRegister.addEventListener("click", handleDemoClick);
-}
+// Enter key: submit login or register when in auth form
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Enter") return;
+  const target = e.target;
+  if (target && target.id === "login-password-input") {
+    document.getElementById("login-btn")?.click();
+    return;
+  }
+  if (target && target.id === "register-confirm-password-input") {
+    document.getElementById("register-btn")?.click();
+  }
+});
 
 // Handle logout
 if (logoutBtn) {
@@ -1744,21 +1748,6 @@ if (logoutBtn) {
         logoutUser();
       }
     }
-  });
-}
-
-// Forgot password: open reset modal and pre-fill email from login if present
-if (forgotPasswordBtn) {
-  forgotPasswordBtn.addEventListener("click", () => {
-    if (resetPasswordEmailInput) {
-      resetPasswordEmailInput.value = loginEmailInput ? loginEmailInput.value.trim() : "";
-    }
-    if (resetPasswordMessage) {
-      resetPasswordMessage.textContent = "";
-      resetPasswordMessage.classList.add("hidden");
-    }
-    openModal(resetPasswordModal);
-    if (resetPasswordEmailInput) resetPasswordEmailInput.focus();
   });
 }
 
