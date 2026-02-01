@@ -347,25 +347,19 @@ async function loadState() {
     return;
   }
 
-  try {
-    // Load state from Firestore
-    const stateDoc = await window.firebaseDb.collection('users').doc(currentUser.uid).collection('data').doc('state').get();
-    
-    if (stateDoc.exists) {
-      const data = stateDoc.data();
-      if (data && Array.isArray(data.boards)) {
-        state.boards = data.boards;
-        state.activeBoardId = data.activeBoardId || (data.boards[0] && data.boards[0].id) || null;
-      }
-    }
+  var stateRef = window.firebaseDb.collection('users').doc(currentUser.uid).collection('data').doc('state');
 
-    // Set up real-time listener for state changes (sync across devices)
+  var listenerRetryCount = 0;
+  var maxListenerRetries = 2;
+
+  function attachStateListener() {
     if (stateUnsubscribe) {
       stateUnsubscribe();
     }
-
-    stateUnsubscribe = window.firebaseDb.collection('users').doc(currentUser.uid).collection('data').doc('state').onSnapshot(
+    stateUnsubscribe = stateRef.onSnapshot(
       (doc) => {
+        // Reset retry count on successful snapshot
+        listenerRetryCount = 0;
         if (doc.exists) {
           const data = doc.data();
           if (data && Array.isArray(data.boards)) {
@@ -379,17 +373,61 @@ async function loadState() {
           }
         }
       },
-      (err) => {
-        console.error("Error in snapshot listener:", err);
-        if (err && err.code === "permission-denied") {
+      async (err) => {
+        console.error("Firestore snapshot error:", err && err.code, err && err.message);
+        if (err && err.code === "permission-denied" && listenerRetryCount < maxListenerRetries) {
+          listenerRetryCount++;
+          console.log("Retrying snapshot listener after token refresh (attempt " + listenerRetryCount + ")");
+          // Unsubscribe the failed listener
+          if (stateUnsubscribe) {
+            stateUnsubscribe();
+            stateUnsubscribe = null;
+          }
+          // Wait and refresh token before retry
+          await new Promise(function(r) { setTimeout(r, 1000); });
+          if (window.firebaseAuth && window.firebaseAuth.currentUser) {
+            try { await window.firebaseAuth.currentUser.getIdToken(true); } catch (_) {}
+          }
+          // Small additional delay after token refresh
+          await new Promise(function(r) { setTimeout(r, 500); });
+          attachStateListener();
+        } else if (err && err.code === "permission-denied") {
           showFirestorePermissionBanner();
         }
       }
     );
+  }
+
+  async function tryLoadState() {
+    const stateDoc = await stateRef.get();
+    if (stateDoc.exists) {
+      const data = stateDoc.data();
+      if (data && Array.isArray(data.boards)) {
+        state.boards = data.boards;
+        state.activeBoardId = data.activeBoardId || (data.boards[0] && data.boards[0].id) || null;
+      }
+    }
+    attachStateListener();
+  }
+
+  try {
+    await tryLoadState();
   } catch (error) {
-    console.error("Error loading state:", error);
-    if (error.code === "permission-denied") {
-      showFirestorePermissionBanner();
+    console.error("Firestore loadState error:", error && error.code, error && error.message, "path: users/" + currentUser.uid + "/data/state");
+    if (error && error.code === "permission-denied") {
+      // Auth token can lag after login; retry once after a short delay
+      await new Promise(function (r) { setTimeout(r, 800); });
+      try {
+        if (window.firebaseAuth && window.firebaseAuth.currentUser) {
+          try { await window.firebaseAuth.currentUser.getIdToken(true); } catch (_) {}
+        }
+        await tryLoadState();
+      } catch (retryError) {
+        console.error("Firestore loadState retry error:", retryError && retryError.code, retryError && retryError.message);
+        showFirestorePermissionBanner();
+      }
+    } else {
+      throw error;
     }
   }
 }
@@ -398,8 +436,8 @@ function showFirestorePermissionBanner() {
   if (document.getElementById("firestore-permission-banner")) return;
   const banner = document.createElement("div");
   banner.id = "firestore-permission-banner";
-  banner.style.cssText = "position:fixed;top:0;left:0;right:0;background:#b91c1c;color:#fff;padding:8px 16px;text-align:center;font-size:13px;z-index:1000;";
-  banner.textContent = "Firestore permission denied. In Firebase Console go to Firestore Database → Rules, check the rules match your app, and click Publish.";
+  banner.style.cssText = "position:fixed;top:0;left:0;right:0;background:#b91c1c;color:#fff;padding:10px 16px;text-align:center;font-size:13px;z-index:1000;line-height:1.4;";
+  banner.innerHTML = "Firestore permission denied. In Firebase Console go to Firestore Database → Rules, paste the rules from <code>firestore.rules</code>, then click <strong>Publish</strong>. See FIREBASE_SETUP.md for troubleshooting.";
   document.body.appendChild(banner);
 }
 
@@ -2414,6 +2452,8 @@ async function initApp() {
   if (window.firebaseAuth && window.firebaseAuth.currentUser) {
     try {
       await window.firebaseAuth.currentUser.getIdToken(true);
+      // Small delay to allow token propagation to Firestore
+      await new Promise(function(r) { setTimeout(r, 300); });
     } catch (_) {}
   }
 
