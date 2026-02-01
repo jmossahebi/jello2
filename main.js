@@ -1,4 +1,4 @@
-const APP_VERSION = "0.1";
+const APP_VERSION = "0.2";
 
 const STORAGE_KEY = "trelloCloneState.v1";
 const EMAIL_SETTINGS_KEY = "trelloCloneEmailSettings.v1";
