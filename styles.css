@@ -792,13 +792,19 @@ body {
 }
 
 .auth-forgot-row {
-  margin: 0.25rem 0 0;
-  font-size: 0.9rem;
+  margin: 0.5rem 0 0;
+  text-align: center;
 }
 
-.auth-forgot-link {
+.auth-forgot-btn {
+  width: 100%;
   font-size: 0.9rem;
   color: var(--accent);
+  text-decoration: underline;
+}
+
+.auth-forgot-btn:hover {
+  color: var(--text);
 }
 
 .btn-link {
