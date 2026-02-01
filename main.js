@@ -443,26 +443,6 @@ async function enterDemoMode() {
 // Expose for inline onclick (must be set before any code that might throw)
 window.enterDemoMode = enterDemoMode;
 
-// Attach demo button listeners immediately so they work even if later script fails
-(function attachDemoButtons() {
-  function goDemo(e) {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    var p = enterDemoMode();
-    if (p && typeof p.catch === "function") {
-      p.catch(function (err) {
-        alert("Demo mode error: " + (err && err.message ? err.message : String(err)));
-      });
-    }
-  }
-  var btn = document.getElementById("demo-btn");
-  var btnReg = document.getElementById("demo-btn-register");
-  if (btn) btn.addEventListener("click", goDemo);
-  if (btnReg) btnReg.addEventListener("click", goDemo);
-})();
-
 function exitDemoMode() {
   isDemoMode = false;
   currentUser = null;
@@ -1719,7 +1699,13 @@ document.addEventListener("click", async (e) => {
   if (id === "demo-btn" || id === "demo-btn-register") {
     e.preventDefault();
     e.stopPropagation();
-    enterDemoMode();
+    try {
+      await enterDemoMode();
+    } catch (err) {
+      console.error("Demo mode error:", err);
+      alert("Could not start demo mode: " + (err && err.message ? err.message : String(err)));
+      showAuthScreen();
+    }
     return;
   }
   if (id === "forgot-password-btn") {
@@ -1731,6 +1717,7 @@ document.addEventListener("click", async (e) => {
     if (resetMsgEl) {
       resetMsgEl.textContent = "";
       resetMsgEl.classList.add("hidden");
+      resetMsgEl.classList.remove("auth-error", "auth-success");
     }
     openModal(resetPasswordModal);
     if (resetEmailEl) resetEmailEl.focus();
@@ -1748,7 +1735,10 @@ document.addEventListener("click", async (e) => {
       errEl.classList.add("hidden");
     }
     const result = await loginUser(email, password);
-    if (!result.success && errEl) {
+    if (result.success) {
+      showAppContent();
+      await initApp();
+    } else if (errEl) {
       errEl.textContent = result.error;
       errEl.classList.remove("hidden");
     }
@@ -1769,7 +1759,14 @@ document.addEventListener("click", async (e) => {
     }
     const result = await registerUser(email, password, confirmPassword);
     if (result.success) {
-      await loginUser(email, password);
+      const loginResult = await loginUser(email, password);
+      if (loginResult.success) {
+        showAppContent();
+        await initApp();
+      } else if (errEl) {
+        errEl.textContent = loginResult.error;
+        errEl.classList.remove("hidden");
+      }
     } else if (errEl) {
       errEl.textContent = result.error;
       errEl.classList.remove("hidden");
@@ -1782,7 +1779,7 @@ document.addEventListener("click", async (e) => {
 document.addEventListener("keydown", (e) => {
   if (e.key !== "Enter") return;
   const target = e.target;
-  if (target && target.id === "login-password-input") {
+  if (target && (target.id === "login-email-input" || target.id === "login-password-input")) {
     document.getElementById("login-btn")?.click();
     return;
   }
@@ -1821,8 +1818,10 @@ if (resetPasswordSendBtn) {
     if (result.success) {
       resetPasswordMessage.textContent = "If an account exists, we sent a reset link to that email. Check your inbox and spam, and allow a few minutes for delivery.";
       resetPasswordMessage.classList.remove("hidden", "auth-error");
+      resetPasswordMessage.classList.add("auth-success");
     } else {
       resetPasswordMessage.textContent = result.error;
+      resetPasswordMessage.classList.remove("auth-success");
       resetPasswordMessage.classList.add("auth-error");
       resetPasswordMessage.classList.remove("hidden");
     }

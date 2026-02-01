@@ -821,6 +821,16 @@ body {
   min-height: 1.5rem;
 }
 
+.auth-success {
+  color: #16a34a;
+  font-size: 0.85rem;
+  padding: 0.5rem;
+  background: rgba(22, 163, 74, 0.1);
+  border-radius: 0.5rem;
+  border: 1px solid rgba(22, 163, 74, 0.3);
+  min-height: 1.5rem;
+}
+
 .auth-switch {
   display: flex;
   align-items: center;
