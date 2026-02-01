@@ -1,3 +1,5 @@
+const APP_VERSION = "0.1";
+
 const STORAGE_KEY = "trelloCloneState.v1";
 const EMAIL_SETTINGS_KEY = "trelloCloneEmailSettings.v1";
 const GEMINI_SETTINGS_KEY = "trelloCloneGeminiSettings.v1";
@@ -2384,6 +2386,9 @@ async function initApp() {
 }
 
 async function init() {
+  var versionEl = document.getElementById("app-version");
+  if (versionEl) versionEl.textContent = "v" + APP_VERSION;
+
   var errEl = document.getElementById("login-error");
   var regErrEl = document.getElementById("register-error");
   if (errEl) errEl.textContent = "";
