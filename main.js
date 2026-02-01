@@ -1313,10 +1313,18 @@ let emailCardContext = null; // { boardId, listId, cardId }
 function openModal(modal) {
   backdrop.classList.remove("hidden");
   modal.classList.remove("hidden");
+  if (modal === resetPasswordModal) {
+    backdrop.classList.add("modal-over-auth");
+    modal.classList.add("modal-over-auth");
+  }
 }
 
 function closeModal(modal) {
   modal.classList.add("hidden");
+  if (modal === resetPasswordModal) {
+    backdrop.classList.remove("modal-over-auth");
+    modal.classList.remove("modal-over-auth");
+  }
   // hide backdrop if all modals closed
   if (boardModal.classList.contains("hidden") &&
       listModal.classList.contains("hidden") &&
@@ -1327,6 +1335,7 @@ function closeModal(modal) {
       (pomodoroModal && pomodoroModal.classList.contains("hidden")) &&
       (resetPasswordModal && resetPasswordModal.classList.contains("hidden"))) {
     backdrop.classList.add("hidden");
+    backdrop.classList.remove("modal-over-auth");
   }
 }
 
@@ -1794,7 +1803,12 @@ if (resetPasswordSendBtn) {
     resetPasswordMessage.textContent = "";
     resetPasswordMessage.classList.add("hidden");
 
+    resetPasswordSendBtn.disabled = true;
+    resetPasswordSendBtn.textContent = "Sending…";
     const result = await sendPasswordResetEmail(email);
+    resetPasswordSendBtn.disabled = false;
+    resetPasswordSendBtn.textContent = "Send reset link";
+
     if (result.success) {
       resetPasswordMessage.textContent = "Check your email for a link to reset your password.";
       resetPasswordMessage.classList.remove("hidden", "auth-error");
@@ -1855,8 +1869,14 @@ backdrop.addEventListener("click", (e) => {
     const modals = [boardModal, listModal, cardModal, emailModal, transcriptModal, settingsModal];
     if (pomodoroModal) modals.push(pomodoroModal);
     if (resetPasswordModal) modals.push(resetPasswordModal);
-    modals.forEach((m) => m && m.classList.add("hidden"));
+    modals.forEach((m) => {
+      if (m) {
+        m.classList.add("hidden");
+        if (m === resetPasswordModal) m.classList.remove("modal-over-auth");
+      }
+    });
     backdrop.classList.add("hidden");
+    backdrop.classList.remove("modal-over-auth");
   }
 });
 

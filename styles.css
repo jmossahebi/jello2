@@ -592,6 +592,12 @@ body {
   z-index: 50;
 }
 
+/* Reset password modal opens from auth screen (z-index 100) — must sit above it */
+.modal-backdrop.modal-over-auth,
+.modal.modal-over-auth {
+  z-index: 110;
+}
+
 .modal-content {
   width: 100%;
   max-width: 420px;
