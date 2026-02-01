@@ -130,15 +130,12 @@ async function loginUser(email, password) {
   }
 
   try {
-    // Sign in with Firebase Auth
+    // Sign in with Firebase Auth (listener will then call showAppContent + initApp)
     const userCredential = await window.firebaseAuth.signInWithEmailAndPassword(
       email.toLowerCase(),
       password
     );
-    
-    // Get user data from Firestore
-    const userDoc = await window.firebaseDb.collection('users').doc(userCredential.user.uid).get();
-    
+
     currentUser = {
       uid: userCredential.user.uid,
       email: userCredential.user.email
