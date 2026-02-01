@@ -13,12 +13,13 @@
       return;
     }
     const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_PROJECT_ID.appspot.com",
-      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-      appId: "YOUR_APP_ID"
+      apiKey: "AIzaSyBhzmmdQhcx1OoopE897QVciVNCFKWqW6k",
+      authDomain: "jello-3b04a.firebaseapp.com",
+      projectId: "jello-3b04a",
+      storageBucket: "jello-3b04a.firebasestorage.app",
+      messagingSenderId: "132843891625",
+      appId: "1:132843891625:web:b26bb2984900568c2772b8",
+      measurementId: "G-SZ803Z2LBR"
     };
     // If config is still placeholder, don't init Firebase — app will go straight to demo board
     var isPlaceholder = !firebaseConfig.apiKey || firebaseConfig.apiKey.indexOf("YOUR_") !== -1 ||
