@@ -33,7 +33,7 @@
               <span class="field-label">Password</span>
               <div class="password-field-wrapper">
                 <input id="login-password-input" class="field-input" type="password" placeholder="••••••••" autocomplete="current-password" />
-                <button type="button" class="password-toggle-btn" data-target="login-password-input" aria-label="Show password">👁</button>
+                <button type="button" class="password-toggle-btn" data-target="login-password-input" aria-label="Show password">Show</button>
               </div>
             </label>
             <p class="auth-forgot-row">
@@ -57,14 +57,14 @@
               <span class="field-label">Password</span>
               <div class="password-field-wrapper">
                 <input id="register-password-input" class="field-input" type="password" placeholder="••••••••" autocomplete="new-password" />
-                <button type="button" class="password-toggle-btn" data-target="register-password-input" aria-label="Show password">👁</button>
+                <button type="button" class="password-toggle-btn" data-target="register-password-input" aria-label="Show password">Show</button>
               </div>
             </label>
             <label class="field">
               <span class="field-label">Confirm password</span>
               <div class="password-field-wrapper">
                 <input id="register-confirm-password-input" class="field-input" type="password" placeholder="••••••••" autocomplete="new-password" />
-                <button type="button" class="password-toggle-btn" data-target="register-confirm-password-input" aria-label="Show password">👁</button>
+                <button type="button" class="password-toggle-btn" data-target="register-confirm-password-input" aria-label="Show password">Show</button>
               </div>
             </label>
             <div id="register-error" class="auth-error hidden"></div>
@@ -78,7 +78,7 @@
     <div class="app" id="app-content">
       <div class="world-clock-container" id="world-clock-container">
         <div class="world-clock-header">
-          <span class="world-clock-title">🌍 World Clock</span>
+          <span class="world-clock-title">World Clock</span>
           <button type="button" class="btn btn-ghost world-clock-toggle-btn" id="world-clock-hide-btn" title="Hide world clock">− Hide</button>
         </div>
         <div class="world-clock-clocks" id="world-clock-clocks">
@@ -86,7 +86,7 @@
         </div>
       </div>
       <div class="world-clock-show-bar hidden" id="world-clock-show-bar">
-        <button type="button" class="btn btn-ghost world-clock-show-btn" id="world-clock-show-btn" title="Show world clock">🌍 Show World Clock</button>
+        <button type="button" class="btn btn-ghost world-clock-show-btn" id="world-clock-show-btn" title="Show world clock">Show World Clock</button>
       </div>
       <header class="app-header">
         <div class="app-header-left">
@@ -98,22 +98,22 @@
             <span class="pomodoro-phase" id="pomodoro-phase">Focus</span>
             <span class="pomodoro-time" id="pomodoro-time">25:00</span>
             <div class="pomodoro-actions">
-              <button type="button" class="btn btn-secondary pomodoro-btn" id="pomodoro-start-pause" title="Start / Pause">▶</button>
-              <button type="button" class="btn btn-ghost pomodoro-btn" id="pomodoro-reset" title="Reset">↺</button>
-              <button type="button" class="btn btn-ghost pomodoro-btn" id="pomodoro-settings-btn" title="Customise work & rest time">⚙</button>
+              <button type="button" class="btn btn-secondary pomodoro-btn" id="pomodoro-start-pause" title="Start / Pause">Play</button>
+              <button type="button" class="btn btn-ghost pomodoro-btn" id="pomodoro-reset" title="Reset">Reset</button>
+              <button type="button" class="btn btn-ghost pomodoro-btn" id="pomodoro-settings-btn" title="Customise work & rest time">Settings</button>
             </div>
           </div>
           <select id="board-select" class="board-select"></select>
           <div class="backup-controls">
-            <button id="backup-folder-btn" class="btn btn-secondary" title="Select backup folder">📁 Backup Folder</button>
+            <button id="backup-folder-btn" class="btn btn-secondary" title="Select backup folder">Backup Folder</button>
             <span id="backup-status" class="backup-status" title="Backup status"></span>
           </div>
           <button id="export-btn" class="btn btn-secondary" title="Export all boards">Export</button>
           <button id="import-btn" class="btn btn-secondary" title="Import boards from file">Import</button>
           <input type="file" id="import-file-input" accept=".json" style="display: none;" />
-          <button id="email-settings-btn" class="btn btn-secondary" title="Configure email settings">✉️ Email Settings</button>
-          <button id="transcript-btn" class="btn btn-secondary" title="Import transcript and create cards">🎤 Transcript</button>
-          <button id="settings-btn" class="btn btn-secondary" title="Settings">⚙️ Settings</button>
+          <button id="email-settings-btn" class="btn btn-secondary" title="Configure email settings">Email Settings</button>
+          <button id="transcript-btn" class="btn btn-secondary" title="Import transcript and create cards">Transcript</button>
+          <button id="settings-btn" class="btn btn-secondary" title="Settings">Settings</button>
           <button id="add-board-btn" class="btn btn-secondary">+ New board</button>
           <div class="user-info">
             <span id="user-email-display" class="user-email"></span>

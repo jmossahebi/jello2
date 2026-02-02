@@ -558,7 +558,7 @@ function renderCardTagChips() {
     remove.type = "button";
     remove.className = "tag-chip-remove";
     remove.setAttribute("aria-label", "Remove tag");
-    remove.textContent = "×";
+    remove.textContent = "x";
     remove.addEventListener("click", () => {
       currentCardTags = currentCardTags.filter((t) => t !== tag);
       renderCardTagChips();
@@ -637,7 +637,7 @@ async function loadBackupDirectory() {
   try {
     if (!backupStatus || !backupFolderBtn) return null;
     if (!('showDirectoryPicker' in window)) {
-      backupStatus.textContent = "⚠️ Not supported";
+      backupStatus.textContent = "Not supported";
       backupStatus.classList.add("pending");
       backupFolderBtn.disabled = true;
       return null;
@@ -729,16 +729,16 @@ function updateBackupStatus() {
     
     if (hoursSinceBackup < 24) {
       const hoursAgo = Math.floor(hoursSinceBackup);
-      backupStatus.textContent = `✓ Backed up ${hoursAgo}h ago`;
+      backupStatus.textContent = `Backed up ${hoursAgo}h ago`;
       backupStatus.classList.add("active");
       backupStatus.classList.remove("pending");
     } else {
-      backupStatus.textContent = "⚠️ Backup due";
+      backupStatus.textContent = "Backup due";
       backupStatus.classList.add("pending");
       backupStatus.classList.remove("active");
     }
   } else {
-    backupStatus.textContent = "✓ Ready";
+    backupStatus.textContent = "Ready";
     backupStatus.classList.add("active");
     backupStatus.classList.remove("pending");
   }
@@ -776,7 +776,7 @@ async function performBackup() {
     return true;
   } catch (error) {
     console.error("Backup failed:", error);
-    backupStatus.textContent = "✗ Backup failed";
+    backupStatus.textContent = "Backup failed";
     backupStatus.classList.add("pending");
     backupStatus.classList.remove("active");
     return false;
@@ -1405,7 +1405,7 @@ function renderBoard() {
 
   board.lists.forEach((list) => {
     const listEl = document.createElement("section");
-    listEl.className = "list drop-zone";
+    listEl.className = "list";
     listEl.dataset.listId = list.id;
 
     const header = document.createElement("header");
@@ -1420,7 +1420,7 @@ function renderBoard() {
 
     const editBtn = document.createElement("button");
     editBtn.className = "icon-btn";
-    editBtn.innerHTML = "✎";
+    editBtn.textContent = "Edit";
     editBtn.title = "Rename list";
     editBtn.addEventListener("click", () => {
       editingListId = list.id;
@@ -1432,7 +1432,7 @@ function renderBoard() {
 
     const delBtn = document.createElement("button");
     delBtn.className = "icon-btn";
-    delBtn.innerHTML = "✕";
+    delBtn.textContent = "x";
     delBtn.title = "Delete list";
     delBtn.addEventListener("click", () => {
       if (!confirm("Delete this list and all its cards?")) return;
@@ -1448,7 +1448,7 @@ function renderBoard() {
     header.appendChild(actions);
 
     const cardList = document.createElement("div");
-    cardList.className = "card-list";
+    cardList.className = "card-list drop-zone";
     cardList.dataset.listId = list.id;
 
     const cardsToShow = list.cards.filter(cardMatchesFilter);
@@ -1501,7 +1501,7 @@ function renderBoard() {
 
       const editBtn = document.createElement("button");
       editBtn.className = "icon-btn";
-      editBtn.innerHTML = "✎";
+      editBtn.textContent = "Edit";
       editBtn.title = "Edit card";
       editBtn.addEventListener("click", () => {
         editingCardContext = {
@@ -1522,7 +1522,7 @@ function renderBoard() {
 
       const emailBtn = document.createElement("button");
       emailBtn.className = "icon-btn";
-      emailBtn.innerHTML = "✉";
+      emailBtn.textContent = "Email";
       emailBtn.title = "Email task";
       emailBtn.addEventListener("click", () => {
         emailCardContext = {
@@ -1535,7 +1535,7 @@ function renderBoard() {
 
       const delBtn = document.createElement("button");
       delBtn.className = "icon-btn";
-      delBtn.innerHTML = "✕";
+      delBtn.textContent = "x";
       delBtn.title = "Delete card";
       delBtn.addEventListener("click", () => {
         if (!confirm("Delete this card?")) return;
@@ -1577,7 +1577,7 @@ function renderBoard() {
       cardTitleInput.focus();
     });
 
-    setupDropZone(listEl);
+    setupDropZone(cardList);
 
     listEl.appendChild(header);
     listEl.appendChild(cardList);
@@ -1628,30 +1628,33 @@ function setupCardDragEvents(cardEl) {
 }
 
 function setupDropZone(zone) {
-  // Use the card list inside the zone for insertion and position calculation (zone may be the whole column)
-  const cardList = zone.querySelector(".card-list") || zone;
+  let lastAfterElement = null;
 
   zone.addEventListener("dragover", (e) => {
     if (!draggedCard) return;
     e.preventDefault();
     zone.classList.add("active");
 
-    const afterElement = getDragAfterElement(cardList, e.clientY);
-    if (!afterElement) {
-      cardList.appendChild(draggedCard);
-    } else {
-      cardList.insertBefore(draggedCard, afterElement);
+    const afterElement = getDragAfterElement(zone, e.clientY);
+    if (afterElement !== lastAfterElement) {
+      lastAfterElement = afterElement;
+      if (!afterElement) {
+        zone.appendChild(draggedCard);
+      } else {
+        zone.insertBefore(draggedCard, afterElement);
+      }
     }
   });
 
   zone.addEventListener("dragleave", (e) => {
-    // Don't deactivate when pointer moves to a child (e.g. header, add button) — only when truly leaving the column
     if (e.relatedTarget && zone.contains(e.relatedTarget)) return;
     zone.classList.remove("active");
+    lastAfterElement = null;
   });
 
   zone.addEventListener("drop", (e) => {
     zone.classList.remove("active");
+    lastAfterElement = null;
     if (!draggedCard) return;
     e.preventDefault();
 
@@ -1670,8 +1673,7 @@ function setupDropZone(zone) {
 
     const [card] = sourceList.cards.splice(cardIndex, 1);
 
-    // compute new index from DOM (use cardList so we only look at cards in this column)
-    const children = Array.from(cardList.querySelectorAll(".card"));
+    const children = Array.from(zone.querySelectorAll(".card"));
     const newIndex = children.findIndex((el) => el.dataset.cardId === cardId);
     if (newIndex === -1 || newIndex >= targetList.cards.length) {
       targetList.cards.push(card);
@@ -1714,12 +1716,12 @@ document.addEventListener("click", (e) => {
 
   if (input.type === "password") {
     input.type = "text";
-    btn.textContent = "🙈";
+    btn.textContent = "Hide";
     btn.classList.add("active");
     btn.setAttribute("aria-label", "Hide password");
   } else {
     input.type = "password";
-    btn.textContent = "👁";
+    btn.textContent = "Show";
     btn.classList.remove("active");
     btn.setAttribute("aria-label", "Show password");
   }
@@ -2402,7 +2404,7 @@ function updatePomodoroDisplay() {
   pomodoroWidget.classList.toggle("rest", pomodoroPhase === "rest");
   pomodoroWidget.classList.toggle("running", pomodoroRunning);
   if (pomodoroStartPauseBtn) {
-    pomodoroStartPauseBtn.textContent = pomodoroRunning ? "⏸" : "▶";
+    pomodoroStartPauseBtn.textContent = pomodoroRunning ? "Pause" : "Play";
     pomodoroStartPauseBtn.title = pomodoroRunning ? "Pause" : "Start";
   }
 }
