@@ -1693,10 +1693,14 @@ function getDragAfterElement(container, y) {
 document.addEventListener("click", (e) => {
   const addCardBtn = e.target.closest(".add-card-btn");
   if (!addCardBtn) return;
-  
+
+  // Stop propagation to prevent any other handlers from processing this click
+  e.stopPropagation();
+  e.preventDefault();
+
   const listEl = addCardBtn.closest(".list");
   if (!listEl) return;
-  
+
   const listId = listEl.dataset.listId;
   const board = getActiveBoard();
   if (!board) return;
