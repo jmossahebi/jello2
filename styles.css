@@ -583,6 +583,10 @@ body {
   border-radius: var(--radius);
   color: var(--text-muted);
   transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease, box-shadow 0.1s ease;
+  position: relative;
+  z-index: 5;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 .add-card-btn:hover {

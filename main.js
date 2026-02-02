@@ -1557,25 +1557,9 @@ function renderBoard() {
     const addCardBtn = document.createElement("button");
     addCardBtn.className = "btn add-card-btn";
     addCardBtn.type = "button";
+    addCardBtn.draggable = false;
     addCardBtn.textContent = "+ Add card";
-    addCardBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      editingCardContext = {
-        boardId: board.id,
-        listId: list.id,
-        cardId: null,
-      };
-      cardModalTitle.textContent = "New card";
-      cardTitleInput.value = "";
-      cardDescriptionInput.value = "";
-      cardPriorityInput.value = "p2";
-      currentCardTags = [];
-      renderCardTagChips();
-      if (cardTagInput) cardTagInput.value = "";
-      openModal(cardModal);
-      cardTitleInput.focus();
-    });
+    // Click handled by delegated handler at document level
 
     setupDropZone(cardList);
 
@@ -1704,6 +1688,34 @@ function getDragAfterElement(container, y) {
 }
 
 // ---------- Auth Events ----------
+
+// Add card button click handler (delegated for reliability)
+document.addEventListener("click", (e) => {
+  const addCardBtn = e.target.closest(".add-card-btn");
+  if (!addCardBtn) return;
+  
+  const listEl = addCardBtn.closest(".list");
+  if (!listEl) return;
+  
+  const listId = listEl.dataset.listId;
+  const board = getActiveBoard();
+  if (!board) return;
+  
+  editingCardContext = {
+    boardId: board.id,
+    listId: listId,
+    cardId: null,
+  };
+  cardModalTitle.textContent = "New card";
+  cardTitleInput.value = "";
+  cardDescriptionInput.value = "";
+  cardPriorityInput.value = "p2";
+  currentCardTags = [];
+  renderCardTagChips();
+  if (cardTagInput) cardTagInput.value = "";
+  openModal(cardModal);
+  cardTitleInput.focus();
+});
 
 // Password visibility toggle
 document.addEventListener("click", (e) => {
