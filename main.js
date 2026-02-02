@@ -1,9 +1,5 @@
 const APP_VERSION = "0.2";
 
-// When true: skip login/register flow and open directly on kanban (demo mode / localStorage).
-// Set to false to restore auth flow.
-const SKIP_LOGIN_OPEN_KANBAN = false;
-
 const STORAGE_KEY = "trelloCloneState.v1";
 const EMAIL_SETTINGS_KEY = "trelloCloneEmailSettings.v1";
 const GEMINI_SETTINGS_KEY = "trelloCloneGeminiSettings.v1";
@@ -11,7 +7,6 @@ const POMODORO_SETTINGS_KEY = "trelloClonePomodoroSettings.v1";
 const WORLD_CLOCK_VISIBLE_KEY = "trelloCloneWorldClockVisible.v1";
 const USERS_STORAGE_KEY = "trelloCloneUsers.v1";
 const CURRENT_USER_KEY = "trelloCloneCurrentUser.v1";
-const DEMO_STORAGE_KEY = "trelloCloneDemoState.v1";
 
 /**
  * State shape:
@@ -27,8 +22,6 @@ const state = {
 
 // Current authenticated user
 let currentUser = null;
-// Demo mode flag
-let isDemoMode = false;
 // Registration in progress flag (prevents onAuthStateChanged race condition)
 let isRegistering = false;
 // True while sign-in is in progress (stops auth listener from showing auth screen on spurious null)
@@ -71,7 +64,7 @@ async function registerUser(email, password, confirmPassword) {
     return { success: false, error: "Passwords do not match" };
   }
   if (!window.firebaseAuth || !window.firebaseDb) {
-    return { success: false, error: "Sign-up is not available. Try demo mode." };
+    return { success: false, error: "Sign-up is not available. Please check your connection." };
   }
 
   try {
@@ -177,7 +170,7 @@ async function loginUser(email, password) {
     return { success: false, error: "Email and password are required" };
   }
   if (!window.firebaseAuth) {
-    return { success: false, error: "Sign-in is not available. Try demo mode." };
+    return { success: false, error: "Sign-in is not available. Please check your connection." };
   }
 
   try {
@@ -216,15 +209,10 @@ async function loginUser(email, password) {
 
 // Logout user
 function logoutUser() {
-  if (isDemoMode) {
-    exitDemoMode();
-    return;
-  }
   if (window.firebaseAuth) {
     window.firebaseAuth.signOut().catch((error) => console.error("Logout error:", error));
   }
   currentUser = null;
-  isDemoMode = false;
   showAuthScreen();
 }
 
@@ -243,25 +231,14 @@ function getCurrentUser() {
 // Listen for auth state changes
 function setupAuthListener() {
   window.firebaseAuth.onAuthStateChanged(async (user) => {
-    // Don't interfere if in demo mode
-    if (isDemoMode) {
-      return;
-    }
-
     if (user) {
       isSigningIn = false; // sign-in completed
       currentUser = {
         uid: user.uid,
         email: user.email
       };
-      isDemoMode = false; // Ensure demo mode is off
       if (userEmailDisplay) {
         userEmailDisplay.textContent = user.email;
-      }
-      // Hide demo banner if visible
-      const demoBanner = document.getElementById("demo-banner");
-      if (demoBanner) {
-        demoBanner.classList.add("hidden");
       }
       // During registration, defer showAppContent/initApp to the register button handler (avoids race with Firestore setup)
       if (isRegistering) {
@@ -289,7 +266,6 @@ function setupAuthListener() {
         return;
       }
       currentUser = null;
-      isDemoMode = false;
       // Reset initialization state on logout
       appInitialized = false;
       appInitPromise = null;
@@ -333,7 +309,6 @@ function showRegisterScreen() {
 
 // Show auth screen (default: Sign in tab)
 function showAuthScreen() {
-  if (SKIP_LOGIN_OPEN_KANBAN || window.SKIP_LOGIN_OPEN_KANBAN) return;
   showLoginScreen();
 }
 
@@ -363,17 +338,6 @@ function uid() {
 let stateUnsubscribe = null;
 
 async function saveState() {
-  // Demo mode: save to localStorage
-  if (isDemoMode) {
-    try {
-      localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(state));
-    } catch (error) {
-      console.error("Error saving demo state:", error);
-    }
-    return;
-  }
-
-  // Firebase mode: save to Firestore
   if (!currentUser || !currentUser.uid) {
     return;
   }
@@ -401,24 +365,6 @@ async function saveState() {
 }
 
 async function loadState() {
-  // Demo mode: load from localStorage
-  if (isDemoMode) {
-    try {
-      const raw = localStorage.getItem(DEMO_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed && Array.isArray(parsed.boards)) {
-          state.boards = parsed.boards;
-          state.activeBoardId = parsed.activeBoardId || (parsed.boards[0] && parsed.boards[0].id) || null;
-        }
-      }
-    } catch (error) {
-      console.error("Error loading demo state:", error);
-    }
-    return;
-  }
-
-  // Firebase mode: load from Firestore
   if (!currentUser || !currentUser.uid) {
     return;
   }
@@ -579,63 +525,6 @@ function showFirestorePermissionBanner() {
   banner.appendChild(text);
   banner.appendChild(refreshBtn);
   document.body.appendChild(banner);
-}
-
-// ---------- Demo Mode ----------
-
-async function enterDemoMode() {
-  try {
-    // Avoid double-entry if already in demo mode and app is visible
-    const appContent = document.getElementById("app-content");
-    if (isDemoMode && appContent && !appContent.classList.contains("hidden")) {
-      return;
-    }
-    isDemoMode = true;
-    currentUser = { email: "demo@example.com", uid: "demo" };
-
-    // Show app first so user sees something immediately
-    showAppContent();
-
-    // Show demo banner
-    const demoBanner = document.getElementById("demo-banner");
-    if (demoBanner) {
-      demoBanner.classList.remove("hidden");
-    }
-
-    // Update user display
-    if (userEmailDisplay) {
-      userEmailDisplay.textContent = "Demo Mode";
-    }
-
-    // Initialize app (load state, create default board if needed, render)
-    await initApp();
-  } catch (error) {
-    console.error("Demo mode error:", error);
-    isDemoMode = false;
-    currentUser = null;
-    showAuthScreen();
-    alert("Could not start demo mode: " + (error.message || String(error)));
-  }
-}
-
-// Expose for inline onclick (must be set before any code that might throw)
-window.enterDemoMode = enterDemoMode;
-
-function exitDemoMode() {
-  isDemoMode = false;
-  currentUser = null;
-  
-  const demoBanner = document.getElementById("demo-banner");
-  if (demoBanner) {
-    demoBanner.classList.add("hidden");
-  }
-  
-  if (confirm("Clear demo data? Your current board data will be reset.")) {
-    localStorage.removeItem(DEMO_STORAGE_KEY);
-  }
-  
-  // Stay on board – re-enter demo mode (login flow disabled)
-  enterDemoMode();
 }
 
 function getActiveBoard() {
@@ -959,19 +848,6 @@ async function cleanupOldBackups() {
 // ---------- Email Functionality ----------
 
 async function getEmailSettings() {
-  // Demo mode: use localStorage
-  if (isDemoMode) {
-    try {
-      const raw = localStorage.getItem(`${DEMO_STORAGE_KEY}_emailSettings`);
-      if (raw) {
-        return JSON.parse(raw);
-      }
-    } catch (error) {
-      console.error("Error loading demo email settings:", error);
-    }
-    return { defaultRecipient: "" };
-  }
-
   if (!currentUser || !currentUser.uid) {
     return { defaultRecipient: "" };
   }
@@ -988,16 +864,6 @@ async function getEmailSettings() {
 }
 
 async function saveEmailSettings(settings) {
-  // Demo mode: use localStorage
-  if (isDemoMode) {
-    try {
-      localStorage.setItem(`${DEMO_STORAGE_KEY}_emailSettings`, JSON.stringify(settings));
-    } catch (error) {
-      console.error("Error saving demo email settings:", error);
-    }
-    return;
-  }
-
   if (!currentUser || !currentUser.uid) {
     return;
   }
@@ -1012,19 +878,6 @@ async function saveEmailSettings(settings) {
 // ---------- Gemini Settings ----------
 
 async function getGeminiSettings() {
-  // Demo mode: use localStorage
-  if (isDemoMode) {
-    try {
-      const raw = localStorage.getItem(`${DEMO_STORAGE_KEY}_geminiSettings`);
-      if (raw) {
-        return JSON.parse(raw);
-      }
-    } catch (error) {
-      console.error("Error loading demo Gemini settings:", error);
-    }
-    return { apiKey: "" };
-  }
-
   if (!currentUser || !currentUser.uid) {
     return { apiKey: "" };
   }
@@ -1041,16 +894,6 @@ async function getGeminiSettings() {
 }
 
 async function saveGeminiSettings(settings) {
-  // Demo mode: use localStorage
-  if (isDemoMode) {
-    try {
-      localStorage.setItem(`${DEMO_STORAGE_KEY}_geminiSettings`, JSON.stringify(settings));
-    } catch (error) {
-      console.error("Error saving demo Gemini settings:", error);
-    }
-    return;
-  }
-
   if (!currentUser || !currentUser.uid) {
     return;
   }
@@ -1381,8 +1224,6 @@ const loginBtn = document.getElementById("login-btn");
 const registerBtn = document.getElementById("register-btn");
 const goToLoginBtn = document.getElementById("go-to-login-btn");
 const goToRegisterBtn = document.getElementById("go-to-register-btn");
-const demoBtn = document.getElementById("demo-btn");
-const demoBtnRegister = document.getElementById("demo-btn-register");
 const loginError = document.getElementById("login-error");
 const registerError = document.getElementById("register-error");
 const logoutBtn = document.getElementById("logout-btn");
@@ -1896,18 +1737,6 @@ document.addEventListener("click", async (e) => {
     showLoginScreen();
     return;
   }
-  if (id === "demo-btn" || id === "demo-btn-register") {
-    e.preventDefault();
-    e.stopPropagation();
-    try {
-      await enterDemoMode();
-    } catch (err) {
-      console.error("Demo mode error:", err);
-      alert("Could not start demo mode: " + (err && err.message ? err.message : String(err)));
-      showAuthScreen();
-    }
-    return;
-  }
   if (id === "forgot-password-btn") {
     e.preventDefault();
     const emailEl = document.getElementById("login-email-input");
@@ -2053,12 +1882,8 @@ document.addEventListener("keydown", (e) => {
 // Handle logout
 if (logoutBtn) {
   logoutBtn.addEventListener("click", () => {
-    if (isDemoMode) {
-      exitDemoMode();
-    } else {
-      if (confirm("Are you sure you want to logout?")) {
-        logoutUser();
-      }
+    if (confirm("Are you sure you want to logout?")) {
+      logoutUser();
     }
   });
 }
@@ -2657,7 +2482,7 @@ if (document.readyState === 'loading') {
 }
 
 async function initApp() {
-  // Resolve required elements by ID so demo mode works even if script failed before DOM refs
+  // Resolve required elements by ID as fallback if script failed before DOM refs
   var boardBtn = addBoardBtn || document.getElementById("add-board-btn");
   var boardModalEl = boardModal || document.getElementById("board-modal");
   var boardSaveBtnEl = boardSaveBtn || document.getElementById("board-save-btn");
@@ -2729,21 +2554,25 @@ async function init() {
   if (regErrEl) regErrEl.textContent = "";
 
   try {
-    if (SKIP_LOGIN_OPEN_KANBAN || window.SKIP_LOGIN_OPEN_KANBAN) {
-      // Bypass auth: open directly on kanban (demo mode, localStorage).
-      await enterDemoMode();
-      return;
-    }
     if (window.firebaseAuth) {
       setupAuthListener();
-      // HTML defaults to kanban; show login until auth state is known.
+      // Show login until auth state is known
       showAuthScreen();
     } else {
-      enterDemoMode();
+      // Firebase not available - show error on auth screen
+      showAuthScreen();
+      if (errEl) {
+        errEl.textContent = "Authentication service unavailable. Please check your connection and try again.";
+        errEl.classList.remove("hidden");
+      }
     }
   } catch (err) {
-    console.warn("Init error:", err);
-    enterDemoMode();
+    console.error("Init error:", err);
+    showAuthScreen();
+    if (errEl) {
+      errEl.textContent = "Failed to initialize: " + (err.message || String(err));
+      errEl.classList.remove("hidden");
+    }
   }
 }
 

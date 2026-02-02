@@ -4,7 +4,6 @@
     <meta charset="UTF-8" />
     <title>Trello Clone</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <script>window.SKIP_LOGIN_OPEN_KANBAN = false;</script>
     <link rel="stylesheet" href="styles.css?v=6" />
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -42,7 +41,6 @@
             </p>
             <div id="login-error" class="auth-error hidden"></div>
             <button type="button" id="login-btn" class="btn btn-primary">Sign in</button>
-            <button type="button" id="demo-btn" class="btn btn-secondary">Try demo</button>
           </form>
         </div>
 
@@ -71,7 +69,6 @@
             </label>
             <div id="register-error" class="auth-error hidden"></div>
             <button type="button" id="register-btn" class="btn btn-primary">Sign up</button>
-            <button type="button" id="demo-btn-register" class="btn btn-secondary">Try demo</button>
           </form>
         </div>
       </div>
@@ -95,10 +92,6 @@
         <div class="app-header-left">
           <div class="app-logo">Kanban</div>
           <div class="app-header-board-name" id="current-board-name"></div>
-          <div class="demo-banner hidden" id="demo-banner">
-            <span>🎮 Demo Mode</span>
-            <span class="demo-note">Temporary workspace - data not saved</span>
-          </div>
         </div>
         <div class="app-header-right">
           <div class="pomodoro-widget" id="pomodoro-widget">

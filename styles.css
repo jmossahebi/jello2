@@ -1023,29 +1023,6 @@ body {
   color: var(--text-muted);
 }
 
-.demo-banner {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.4rem 0.75rem;
-  background: var(--bg-mid);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  font-size: 0.8rem;
-  margin-left: 1rem;
-}
-
-.demo-banner span:first-child {
-  color: var(--text-muted);
-  font-weight: 600;
-}
-
-.demo-note {
-  color: var(--text-dim);
-  font-size: 0.75rem;
-  font-style: italic;
-}
-
 @media (max-width: 768px) {
   .app-header {
     flex-direction: column;
