@@ -1405,7 +1405,7 @@ function renderBoard() {
 
   board.lists.forEach((list) => {
     const listEl = document.createElement("section");
-    listEl.className = "list";
+    listEl.className = "list drop-zone";
     listEl.dataset.listId = list.id;
 
     const header = document.createElement("header");
@@ -1448,7 +1448,7 @@ function renderBoard() {
     header.appendChild(actions);
 
     const cardList = document.createElement("div");
-    cardList.className = "card-list drop-zone";
+    cardList.className = "card-list";
     cardList.dataset.listId = list.id;
 
     const cardsToShow = list.cards.filter(cardMatchesFilter);
@@ -1574,7 +1574,7 @@ function renderBoard() {
       cardTitleInput.focus();
     });
 
-    setupDropZone(cardList);
+    setupDropZone(listEl);
 
     listEl.appendChild(header);
     listEl.appendChild(cardList);
@@ -1625,20 +1625,25 @@ function setupCardDragEvents(cardEl) {
 }
 
 function setupDropZone(zone) {
+  // Use the card list inside the zone for insertion and position calculation (zone may be the whole column)
+  const cardList = zone.querySelector(".card-list") || zone;
+
   zone.addEventListener("dragover", (e) => {
     if (!draggedCard) return;
     e.preventDefault();
     zone.classList.add("active");
 
-    const afterElement = getDragAfterElement(zone, e.clientY);
+    const afterElement = getDragAfterElement(cardList, e.clientY);
     if (!afterElement) {
-      zone.appendChild(draggedCard);
+      cardList.appendChild(draggedCard);
     } else {
-      zone.insertBefore(draggedCard, afterElement);
+      cardList.insertBefore(draggedCard, afterElement);
     }
   });
 
-  zone.addEventListener("dragleave", () => {
+  zone.addEventListener("dragleave", (e) => {
+    // Don't deactivate when pointer moves to a child (e.g. header, add button) — only when truly leaving the column
+    if (e.relatedTarget && zone.contains(e.relatedTarget)) return;
     zone.classList.remove("active");
   });
 
@@ -1662,8 +1667,8 @@ function setupDropZone(zone) {
 
     const [card] = sourceList.cards.splice(cardIndex, 1);
 
-    // compute new index from DOM
-    const children = Array.from(zone.querySelectorAll(".card"));
+    // compute new index from DOM (use cardList so we only look at cards in this column)
+    const children = Array.from(cardList.querySelectorAll(".card"));
     const newIndex = children.findIndex((el) => el.dataset.cardId === cardId);
     if (newIndex === -1 || newIndex >= targetList.cards.length) {
       targetList.cards.push(card);
