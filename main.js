@@ -37,6 +37,8 @@ let isSigningIn = false;
 let appInitialized = false;
 // Promise that resolves when app initialization completes (for coordination)
 let appInitPromise = null;
+// Tracks if initialization failed (so login handler can detect failure)
+let appInitError = null;
 
 // Active tag filter on current board (array of tag strings; empty = show all)
 let activeTagFilter = [];
@@ -272,11 +274,13 @@ function setupAuthListener() {
       }
       showAppContent();
       try {
+        appInitError = null;
         appInitPromise = initApp();
         await appInitPromise;
         appInitialized = true;
       } catch (err) {
         appInitPromise = null;
+        appInitError = err;
         showAppLoadError(getFriendlyLoadError(err));
       }
     } else {
@@ -289,6 +293,7 @@ function setupAuthListener() {
       // Reset initialization state on logout
       appInitialized = false;
       appInitPromise = null;
+      appInitError = null;
       showAuthScreen();
     }
   });
@@ -563,8 +568,16 @@ function showFirestorePermissionBanner() {
   if (document.getElementById("firestore-permission-banner")) return;
   const banner = document.createElement("div");
   banner.id = "firestore-permission-banner";
-  banner.style.cssText = "position:fixed;top:0;left:0;right:0;background:#b91c1c;color:#fff;padding:10px 16px;text-align:center;font-size:13px;z-index:1000;line-height:1.4;";
-  banner.textContent = "We couldn't load your board. Please refresh the page or try again.";
+  banner.style.cssText = "position:fixed;top:0;left:0;right:0;background:#b91c1c;color:#fff;padding:10px 16px;text-align:center;font-size:13px;z-index:1000;line-height:1.4;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;";
+  const text = document.createElement("span");
+  text.textContent = "Sign-in successful, but database access was denied. Please refresh the page to try again.";
+  const refreshBtn = document.createElement("button");
+  refreshBtn.type = "button";
+  refreshBtn.style.cssText = "color:#fff;border:1px solid rgba(255,255,255,0.6);background:transparent;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:12px;";
+  refreshBtn.textContent = "Refresh";
+  refreshBtn.addEventListener("click", function() { window.location.reload(); });
+  banner.appendChild(text);
+  banner.appendChild(refreshBtn);
   document.body.appendChild(banner);
 }
 
@@ -1925,6 +1938,7 @@ document.addEventListener("click", async (e) => {
     // Reset initialization state for fresh login
     appInitialized = false;
     appInitPromise = null;
+    appInitError = null;
     try {
       const result = await loginUser(email, password);
       if (result.success) {
@@ -1932,7 +1946,7 @@ document.addEventListener("click", async (e) => {
         // Wait for initialization to complete (with timeout)
         const initTimeout = 15000; // 15 second timeout
         const startTime = Date.now();
-        while (!appInitialized && (Date.now() - startTime) < initTimeout) {
+        while (!appInitialized && !appInitError && (Date.now() - startTime) < initTimeout) {
           if (appInitPromise) {
             try {
               await appInitPromise;
@@ -1950,6 +1964,17 @@ document.addEventListener("click", async (e) => {
             }
           }
           await new Promise(r => setTimeout(r, 50));
+        }
+        // Check if initialization failed
+        if (appInitError) {
+          // Error already shown by auth listener, just return to login
+          showAuthScreen();
+          showLoginScreen();
+          if (errEl) {
+            errEl.textContent = getFriendlyLoadError(appInitError);
+            errEl.classList.remove("hidden");
+          }
+          return;
         }
         if (!appInitialized && (Date.now() - startTime) >= initTimeout) {
           if (errEl) {
@@ -2651,6 +2676,8 @@ async function initApp() {
   if (window.firebaseAuth && window.firebaseAuth.currentUser) {
     try {
       await window.firebaseAuth.currentUser.getIdToken(true);
+      // Brief delay to ensure token propagates to Firestore
+      await new Promise(function(r) { setTimeout(r, 300); });
     } catch (_) {}
   }
 
