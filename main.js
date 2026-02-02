@@ -1556,8 +1556,11 @@ function renderBoard() {
 
     const addCardBtn = document.createElement("button");
     addCardBtn.className = "btn add-card-btn";
+    addCardBtn.type = "button";
     addCardBtn.textContent = "+ Add card";
-    addCardBtn.addEventListener("click", () => {
+    addCardBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       editingCardContext = {
         boardId: board.id,
         listId: list.id,
@@ -1648,9 +1651,9 @@ function setupDropZone(zone) {
   });
 
   zone.addEventListener("drop", (e) => {
-    e.preventDefault();
     zone.classList.remove("active");
     if (!draggedCard) return;
+    e.preventDefault();
 
     const sourceListId = draggedCard.dataset.listId;
     const cardId = draggedCard.dataset.cardId;
